@@ -1,4 +1,4 @@
-defmodule Membrane.Template.Mixfile do
+defmodule Boombox.Live.Mixfile do
   use Mix.Project
 
   @version "0.1.0"
@@ -37,7 +37,13 @@ defmodule Membrane.Template.Mixfile do
 
   defp deps do
     [
-      {:membrane_core, "~> 1.0"},
+      # {:boombox, "~> 0.1.0"},
+      {:boombox, path: "../boombox"},
+      # {:membrane_webrtc_plugin, "~> 0.23.2"},
+      {:plug_cowboy, "~> 2.5"},
+      {:phoenix_live_view, "~> 1.0"},
+      {:phoenix, "~> 1.7"},
+      {:jason, "~> 1.0"},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
       {:dialyxir, ">= 0.0.0", only: :dev, runtime: false},
       {:credo, ">= 0.0.0", only: :dev, runtime: false}
