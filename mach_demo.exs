@@ -31,8 +31,13 @@ defmodule Example.HomeLive do
     <script src={"https://cdn.jsdelivr.net/npm/phoenix@#{phx_vsn()}/priv/static/phoenix.min.js"}></script>
     <script src={"https://cdn.jsdelivr.net/npm/phoenix_live_view@#{lv_vsn()}/priv/static/phoenix_live_view.min.js"}></script>
     <script>
-      let liveSocket = new window.LiveView.LiveSocket("/live", window.Phoenix.Socket)
-      liveSocket.connect()
+      let Hooks = {};
+      import { createPlayerHook } from "/Users/feliks/membrane/boombox_live/assets/player.js"
+      Hooks.Player = createPlayerHook([{ urls: "stun:stun.l.google.com:19302" }])
+
+      let liveSocket = new window.LiveView("/live", Socket, {
+        hooks: Hooks
+      });
     </script>
     <style>
       * { font-size: 1.1em; }
