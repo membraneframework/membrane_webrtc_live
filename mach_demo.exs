@@ -19,9 +19,9 @@ end
 defmodule Debugger do
   def debug(pid) do
     if Process.alive?(pid) do
-      IO.puts("ALIVE")
+      IO.puts("ALIVE #{inspect(pid)} #{self() |> inspect()}")
     else
-      IO.puts("NOT ALIVE")
+      IO.puts("NOT ALIVE #{inspect(pid)} #{self() |> inspect()}")
     end
 
     Process.sleep(1000)
@@ -36,18 +36,25 @@ defmodule Example.HomeLive do
   alias Boombox.Live.Player
 
   def mount(_params, _session, socket) do
-    signaling_channel = Membrane.WebRTC.SignalingChannel.new()
-
-    boombox_task = Task.async(fn ->
-      Boombox.run(input: "../BigBuckBunny.mp4", output: {:webrtc, signaling_channel})
-    end)
-
-    _debug_task = Task.async(fn -> Debugger.debug(boombox_task.pid) end)
-
     socket =
-      socket
-      |> Player.attach(id: "player", signaling_channel: signaling_channel)
-      |> assign(signaling_channel: signaling_channel, boombox: boombox_task)
+      if connected?(socket) do
+        signaling_channel = Membrane.WebRTC.SignalingChannel.new()
+
+        {:ok, boombox_pid} =
+          Task.start_link(fn ->
+            Boombox.run(input: "../BigBuckBunny.mp4", output: {:webrtc, signaling_channel})
+          end)
+
+        IO.inspect(socket, label: "PARENT MOUNT")
+
+        _debug_task = Task.start_link(fn -> Debugger.debug(boombox_pid) end)
+
+        socket
+        |> Player.attach(id: "videoPlayer", signaling_channel: signaling_channel)
+        |> assign(signaling_channel: signaling_channel, boombox: boombox_pid)
+      else
+        socket
+      end
 
     {:ok, socket}
   end
@@ -65,22 +72,29 @@ defmodule Example.HomeLive do
       function createPlayerHook(iceServers = [{ urls: "stun:stun.l.google.com:19302" }]) {
         return {
           async mounted() {
-
+            console.log("MOUNTED")
 
             this.pc = new RTCPeerConnection({ iceServers: iceServers });
 
             // todo: get element by player id, different for every player
-            this.pc.ontrack = (event) =>
+            this.pc.ontrack = (event) => {
+              console.log("NEW TRACK")
               document.getElementById("videoPlayer").srcObject.addTrack(event.track);
+            }
 
             this.pc.onicecandidate = (ev) => {
+              console.log("NEW BROWSER ICE CANDIDATE")
               message = JSON.stringify({ type: "ice_candidate", data: ev.candidate });
-              this.pushEventTo(this.el, "webrtc_singaling", message);
+              this.pushEventTo(this.el, "webrtc_signaling", message);
             };
 
             // todo: event name ("webrtc_signaling") should be suffixed with the component id
-            this.handleEvent("webrtc_singaling", async (event) => {
-              const { type, data } = JSON.parse(event);
+            this.handleEvent("webrtc_signaling", async (event) => {
+
+              console.log("NEW SIGNALING MESSAGE", event)
+
+              const { type, data } = event;
+
 
               switch (type) {
                 case "sdp_offer":
@@ -119,9 +133,14 @@ defmodule Example.HomeLive do
     """
   end
 
-  def render(assigns) do
+  def render(%{player: %Player{}} = assigns) do
     ~H"""
     <Player.live_render socket={@socket} player={@player} />
+    """
+  end
+
+  def render(assigns) do
+    ~H"""
     """
   end
 

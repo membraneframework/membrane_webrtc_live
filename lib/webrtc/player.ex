@@ -158,6 +158,8 @@ defmodule Boombox.Live.Player do
         receive do
           {^ref, %__MODULE__{} = player} ->
             IO.inspect(player, label: "PLAYER MOUNT")
+            SignalingChannel.register_peer(player.signaling_channel, message_format: :json_data)
+
             socket |> assign(player: player)
         after
           5000 -> exit(:timeout)
@@ -171,18 +173,27 @@ defmodule Boombox.Live.Player do
 
   @impl true
   def handle_info({SignalingChannel, _pid, message, _metadata}, socket) do
+    IO.inspect(message, label: "SIGNALING BOOMBOX -> BROWSER")
+
     {:noreply,
      socket
-     |> push_event("webrtc_signaling", Jason.encode!(message))}
+     |> push_event("webrtc_signaling", message)}
   end
 
   @impl true
   def handle_event("webrtc_signaling", message, socket) do
-    SignalingChannel.signal(
-      socket.assigns.signaling_channel,
-      Jason.decode!(message)
-    )
+    Jason.decode!(message)
+    |> IO.inspect(label: "SIGNALING BROWSER -> BOOMBOX")
+    message = Jason.decode!(message)
 
+    # if message["data"] do
+
+    if message["data"] do
+      SignalingChannel.signal(
+        socket.assigns.player.signaling_channel,
+        message
+      )
+    end
     {:noreply, socket}
   end
 end
