@@ -16,11 +16,40 @@ defmodule Example.ErrorView do
   def render(template, _), do: Phoenix.Controller.status_message_from_template(template)
 end
 
+defmodule Debugger do
+  def debug(pid) do
+    if Process.alive?(pid) do
+      IO.puts("ALIVE")
+    else
+      IO.puts("NOT ALIVE")
+    end
+
+    Process.sleep(1000)
+
+    debug(pid)
+  end
+end
+
 defmodule Example.HomeLive do
   use Phoenix.LiveView, layout: {__MODULE__, :live}
 
+  alias Boombox.Live.Player
+
   def mount(_params, _session, socket) do
-    {:ok, assign(socket, :count, 0)}
+    signaling_channel = Membrane.WebRTC.SignalingChannel.new()
+
+    boombox_task = Task.async(fn ->
+      Boombox.run(input: "../BigBuckBunny.mp4", output: {:webrtc, signaling_channel})
+    end)
+
+    _debug_task = Task.async(fn -> Debugger.debug(boombox_task.pid) end)
+
+    socket =
+      socket
+      |> Player.attach(id: "player", signaling_channel: signaling_channel)
+      |> assign(signaling_channel: signaling_channel, boombox: boombox_task)
+
+    {:ok, socket}
   end
 
   defp phx_vsn, do: Application.spec(:phoenix, :vsn)
@@ -32,12 +61,56 @@ defmodule Example.HomeLive do
     <script src={"https://cdn.jsdelivr.net/npm/phoenix_live_view@#{lv_vsn()}/priv/static/phoenix_live_view.min.js"}></script>
     <script>
       let Hooks = {};
-      import { createPlayerHook } from "/Users/feliks/membrane/boombox_live/assets/player.js"
+
+      function createPlayerHook(iceServers = [{ urls: "stun:stun.l.google.com:19302" }]) {
+        return {
+          async mounted() {
+
+
+            this.pc = new RTCPeerConnection({ iceServers: iceServers });
+
+            // todo: get element by player id, different for every player
+            this.pc.ontrack = (event) =>
+              document.getElementById("videoPlayer").srcObject.addTrack(event.track);
+
+            this.pc.onicecandidate = (ev) => {
+              message = JSON.stringify({ type: "ice_candidate", data: ev.candidate });
+              this.pushEventTo(this.el, "webrtc_singaling", message);
+            };
+
+            // todo: event name ("webrtc_signaling") should be suffixed with the component id
+            this.handleEvent("webrtc_singaling", async (event) => {
+              const { type, data } = JSON.parse(event);
+
+              switch (type) {
+                case "sdp_offer":
+                  console.log("Received SDP offer:", data);
+                  await this.pc.setRemoteDescription(data);
+
+                  const answer = await this.pc.createAnswer();
+                  await this.pc.setLocalDescription(answer);
+
+                  message = JSON.stringify({ type: "sdp_answer", data: answer });
+                  this.pushEventTo(this.el, "webrtc_signaling", message);
+                  console.log("Sent SDP answer:", answer);
+
+                  break;
+                case "ice_candidate":
+                  console.log("Recieved ICE candidate:", data);
+                  await this.pc.addIceCandidate(data);
+              }
+            });
+          },
+        };
+      }
+
       Hooks.Player = createPlayerHook([{ urls: "stun:stun.l.google.com:19302" }])
 
-      let liveSocket = new window.LiveView("/live", Socket, {
+      let liveSocket = new window.LiveView.LiveSocket("/live", window.Phoenix.Socket, {
         hooks: Hooks
       });
+
+      liveSocket.connect()
     </script>
     <style>
       * { font-size: 1.1em; }
@@ -48,9 +121,7 @@ defmodule Example.HomeLive do
 
   def render(assigns) do
     ~H"""
-    <%= @count %>
-    <button phx-click="inc">+</button>
-    <button phx-click="dec">-</button>
+    <Player.live_render socket={@socket} player={@player} />
     """
   end
 

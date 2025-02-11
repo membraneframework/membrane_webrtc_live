@@ -1,4 +1,4 @@
-defmodule LiveExWebRTC.Player do
+defmodule Boombox.Live.Player do
   @moduledoc ~S'''
   Component for sending and playing audio and video via WebRTC from a Phoenix app to a browser (browser subscribes).
 
@@ -59,39 +59,11 @@ defmodule LiveExWebRTC.Player do
   '''
   use Phoenix.LiveView
 
-  alias LiveExWebRTC.Player
   alias Membrane.WebRTC.SignalingChannel
-
-  # @type on_connected() :: (publisher_id :: String.t() -> any())
-
-  # @type on_packet() ::
-  #         (publisher_id :: String.t(),
-  #          packet_type :: :audio | :video,
-  #          packet :: ExRTP.Packet.t(),
-  #          socket :: Phoenix.LiveView.Socket.t() ->
-  #            packet :: ExRTP.Packet.t())
 
   @type t() :: struct()
 
   defstruct [:video?, :audio?, :ice_servers, id: nil, signaling_channel: nil]
-
-  # publisher_id: nil,
-  # pubsub: nil,
-  # pc: nil,
-  # audio_track_id: nil,
-  # video_track_id: nil,
-  # on_packet: nil,
-  # on_connected: nil,
-  # ice_servers: nil,
-  # ice_ip_filter: nil,
-  # ice_port_range: nil,
-  # audio_codecs: nil,
-  # video_codecs: nil,
-  # pc_genserver_opts: nil
-
-  alias ExWebRTC.{ICECandidate, MediaStreamTrack, PeerConnection, SessionDescription}
-  alias ExRTCP.Packet.PayloadFeedback.PLI
-  alias Phoenix.PubSub
 
   attr(:socket, Phoenix.LiveView.Socket, required: true, doc: "Parent live view socket")
 
@@ -123,21 +95,11 @@ defmodule LiveExWebRTC.Player do
   Options:
   * `id` - player id. This is typically your user id (if there is users database).
   It is used to identify live view and generated HTML video player.
-  * `publisher_id` - publisher id that this player is going to subscribe to.
-  * `pubsub` - a pubsub that player live view will subscribe to for audio and video packets. See module doc for more.
-  * `on_connected` - callback called when the underlying peer connection changes its state to the `:connected`. See `t:on_connected/0`.
-  * `on_packet` - callback called for each audio and video RTP packet. Can be used to modify the packet before sending via WebRTC to the other side. See `t:on_packet/0`.
-  * `ice_servers` - a list of `t:ExWebRTC.PeerConnection.Configuration.ice_server/0`,
-  * `ice_ip_filter` - `t:ExICE.ICEAgent.ip_filter/0`,
-  * `ice_port_range` - `t:Enumerable.t(non_neg_integer())/1`,
-  * `audio_codecs` - a list of `t:ExWebRTC.RTPCodecParameters.t/0`,
-  * `video_codecs` - a list of `t:ExWebRTC.RTPCodecParameters.t/0`,
-  * `pc_genserver_opts` - `t:GenServer.options/0` for the underlying `ExWebRTC.PeerConnection` process.
   * `class` - a list of CSS/Tailwind classes that will be applied to the HTMLVideoPlayer. Defaults to "".
   """
   @spec attach(Phoenix.LiveView.Socket.t(), Keyword.t()) :: Phoenix.LiveView.Socket.t()
   def attach(socket, opts) do
-    player =
+    opts =
       opts
       |> Keyword.validate!([
         :id,
@@ -146,7 +108,8 @@ defmodule LiveExWebRTC.Player do
         audio?: true,
         ice_servers: [%{urls: "stun:stun.l.google.com:19302"}]
       ])
-      |> struct!(__MODULE__)
+
+    player = struct!(__MODULE__, opts)
 
     socket
     |> assign(player: player)
@@ -168,12 +131,14 @@ defmodule LiveExWebRTC.Player do
   @impl true
   def render(%{player: nil} = assigns) do
     ~H"""
+    NOT RENDERED {inspect(self())}
     """
   end
 
   @impl true
   def render(assigns) do
     ~H"""
+    RENDERED  {inspect(self())}
     <video id={@player.id} phx-hook="Player" class={@class} controls autoplay muted></video>
     """
   end
@@ -183,14 +148,17 @@ defmodule LiveExWebRTC.Player do
   def mount(_params, %{"class" => class}, socket) do
     socket = assign(socket, class: class, player: nil)
 
+    IO.inspect({self(), connected?(socket)}, label: "MOUNT BEGIN")
+
     if connected?(socket) do
       ref = make_ref()
       send(socket.parent_pid, {__MODULE__, {:connected, ref, self(), %{}}})
 
       socket =
         receive do
-          {^ref, %Player{} = player} ->
-            assign(socket, player: player)
+          {^ref, %__MODULE__{} = player} ->
+            IO.inspect(player, label: "PLAYER MOUNT")
+            socket |> assign(player: player)
         after
           5000 -> exit(:timeout)
         end
@@ -203,18 +171,17 @@ defmodule LiveExWebRTC.Player do
 
   @impl true
   def handle_info({SignalingChannel, _pid, message, _metadata}, socket) do
-    socket
-    |> push_event("webrtc_signaling", Jason.encode!(message))
-
-    {:noreply, socket}
+    {:noreply,
+     socket
+     |> push_event("webrtc_signaling", Jason.encode!(message))}
   end
 
   @impl true
   def handle_event("webrtc_signaling", message, socket) do
-    message = Jason.decode!(message)
-
-    socket.assigns.signaling_channel
-    |> SignalingChannel.signal(message)
+    SignalingChannel.signal(
+      socket.assigns.signaling_channel,
+      Jason.decode!(message)
+    )
 
     {:noreply, socket}
   end
