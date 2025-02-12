@@ -101,12 +101,12 @@ defmodule Example.HomeLive do
             console.log("MOUNTED")
 
             this.pc = new RTCPeerConnection({ iceServers: iceServers });
-            document.getElementById("videoPlayer").srcObject = new MediaStream()
+            this.el.srcObject = new MediaStream()
 
             // todo: get element by player id, different for every player
             this.pc.ontrack = (event) => {
-              console.log("NEW TRACK", document.getElementById("videoPlayer"))
-              document.getElementById("videoPlayer").srcObject.addTrack(event.track);
+              console.log("NEW TRACK", this.el)
+              this.el.srcObject.addTrack(event.track);
             }
 
             this.pc.onicecandidate = (ev) => {
