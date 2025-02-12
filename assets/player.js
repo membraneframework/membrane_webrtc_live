@@ -1,28 +1,35 @@
-export function createPlayerHook(iceServers = [{ urls: "stun:stun.l.google.com:19302" }]) {
+function createPlayerHook(iceServers = [{ urls: "stun:stun.l.google.com:19302" }]) {
   return {
     async mounted() {
+      console.log("MOUNTED");
+
       this.pc = new RTCPeerConnection({ iceServers: iceServers });
+      this.el.srcObject = new MediaStream();
 
-      // todo: get element by player id, different for every player
-      pc.ontrack = (event) =>
-        document.getElementById("videoPlayer").srcObject.addTrack(event.track);
-
-      this.pc.onicecandidate = (ev) => {
-        message = JSON.stringify({ type: "ice_candidate", data: ev.candidate });
-        this.pushEventTo(this.el, "webrtc_singaling", message);
+      this.pc.ontrack = (event) => {
+        console.log("NEW TRACK", this.el);
+        this.el.srcObject.addTrack(event.track);
       };
 
-      // todo: event name ("webrtc_signaling") should be suffixed with the component id
-      this.handleEvent("webrtc_singaling", async (event) => {
-        const { type, data } = JSON.parse(event);
+      this.pc.onicecandidate = (ev) => {
+        console.log("NEW BROWSER ICE CANDIDATE");
+        message = JSON.stringify({ type: "ice_candidate", data: ev.candidate });
+        this.pushEventTo(this.el, "webrtc_signaling", message);
+      };
+
+      const eventName = "webrtc_signaling-" + this.el.id;
+      this.handleEvent(eventName, async (event) => {
+        console.log("NEW SIGNALING MESSAGE", event);
+
+        const { type, data } = event;
 
         switch (type) {
           case "sdp_offer":
             console.log("Received SDP offer:", data);
-            await pc.setRemoteDescription(data);
+            await this.pc.setRemoteDescription(data);
 
-            const answer = await pc.createAnswer();
-            await pc.setLocalDescription(answer);
+            const answer = await this.pc.createAnswer();
+            await this.pc.setLocalDescription(answer);
 
             message = JSON.stringify({ type: "sdp_answer", data: answer });
             this.pushEventTo(this.el, "webrtc_signaling", message);
@@ -31,7 +38,7 @@ export function createPlayerHook(iceServers = [{ urls: "stun:stun.l.google.com:1
             break;
           case "ice_candidate":
             console.log("Recieved ICE candidate:", data);
-            await pc.addIceCandidate(data);
+            await this.pc.addIceCandidate(data);
         }
       });
     },

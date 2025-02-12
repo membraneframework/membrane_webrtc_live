@@ -103,7 +103,6 @@ defmodule Example.HomeLive do
             this.pc = new RTCPeerConnection({ iceServers: iceServers });
             this.el.srcObject = new MediaStream()
 
-            // todo: get element by player id, different for every player
             this.pc.ontrack = (event) => {
               console.log("NEW TRACK", this.el)
               this.el.srcObject.addTrack(event.track);
@@ -115,13 +114,12 @@ defmodule Example.HomeLive do
               this.pushEventTo(this.el, "webrtc_signaling", message);
             };
 
-            // todo: event name ("webrtc_signaling") should be suffixed with the component id
-            this.handleEvent("webrtc_signaling", async (event) => {
+            const eventName = "webrtc_signaling-" + this.el.id
+            this.handleEvent(eventName, async (event) => {
 
               console.log("NEW SIGNALING MESSAGE", event)
 
               const { type, data } = event;
-
 
               switch (type) {
                 case "sdp_offer":

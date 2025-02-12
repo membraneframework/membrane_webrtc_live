@@ -177,7 +177,7 @@ defmodule Boombox.Live.Player do
 
     {:noreply,
      socket
-     |> push_event("webrtc_signaling", message)}
+     |> push_event("webrtc_signaling-#{socket.assigns.player.id}", message)}
   end
 
   @impl true
