@@ -42,7 +42,33 @@ defmodule Example.HomeLive do
 
         {:ok, boombox_pid} =
           Task.start_link(fn ->
-            Boombox.run(input: "../BigBuckBunny.mp4", output: {:webrtc, signaling_channel})
+            # Boombox.run(input: "../output.mp4", output: {:webrtc, signaling_channel})
+
+            overlay =
+              Req.get!("https://avatars.githubusercontent.com/u/25247695?s=200&v=4").body
+              |> Vix.Vips.Image.new_from_buffer()
+              |> then(fn {:ok, img} -> img end)
+              |> Image.trim!()
+              |> Image.thumbnail!(100)
+
+            bg = Image.new!(640, 480, color: :light_gray)
+            max_x = Image.width(bg) - Image.width(overlay)
+            max_y = Image.height(bg) - Image.height(overlay)
+
+            Stream.iterate({_x = 300, _y = 0, _dx = 1, _dy = 2, _pts = 0}, fn {x, y, dx, dy, pts} ->
+              dx = if (x + dx) in 0..max_x, do: dx, else: -dx
+              dy = if (y + dy) in 0..max_y, do: dy, else: -dy
+              pts = pts + div(Membrane.Time.seconds(1), _fps = 60)
+              {x + dx, y + dy, dx, dy, pts}
+            end)
+            |> Stream.map(fn {x, y, _dx, _dy, pts} ->
+              img = Image.compose!(bg, overlay, x: x, y: y)
+              %Boombox.Packet{kind: :video, payload: img, pts: pts}
+            end)
+            |> Boombox.run(
+              input: {:stream, video: :image, audio: false},
+              output: {:webrtc, signaling_channel}
+            )
           end)
 
         IO.inspect(socket, label: "PARENT MOUNT")
@@ -75,10 +101,11 @@ defmodule Example.HomeLive do
             console.log("MOUNTED")
 
             this.pc = new RTCPeerConnection({ iceServers: iceServers });
+            document.getElementById("videoPlayer").srcObject = new MediaStream()
 
             // todo: get element by player id, different for every player
             this.pc.ontrack = (event) => {
-              console.log("NEW TRACK")
+              console.log("NEW TRACK", document.getElementById("videoPlayer"))
               document.getElementById("videoPlayer").srcObject.addTrack(event.track);
             }
 

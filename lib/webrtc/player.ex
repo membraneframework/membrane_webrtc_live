@@ -182,11 +182,7 @@ defmodule Boombox.Live.Player do
 
   @impl true
   def handle_event("webrtc_signaling", message, socket) do
-    Jason.decode!(message)
-    |> IO.inspect(label: "SIGNALING BROWSER -> BOOMBOX")
-    message = Jason.decode!(message)
-
-    # if message["data"] do
+    message = Jason.decode!(message) |> IO.inspect(label: "SIGNALING BROWSER -> BOOMBOX")
 
     if message["data"] do
       SignalingChannel.signal(
