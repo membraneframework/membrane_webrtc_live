@@ -1,4 +1,4 @@
-defmodule Boombox.Live.Capture do
+defmodule Boombox.Live.WebRTC.Capture do
   @moduledoc ~S'''
   Component for sending and playing audio and video via WebRTC from a Phoenix app to a browser (browser subscribes).
 

@@ -33,7 +33,7 @@ end
 defmodule Example.HomeLive do
   use Phoenix.LiveView, layout: {__MODULE__, :live}
 
-  alias Boombox.Live.Player
+  alias Boombox.Live.WebRTC.Player
 
   def mount(_params, _session, socket) do
     socket =
@@ -42,8 +42,6 @@ defmodule Example.HomeLive do
 
         {:ok, boombox_pid} =
           Task.start_link(fn ->
-            # Boombox.run(input: "../output.mp4", output: {:webrtc, signaling_channel})
-
             overlay =
               Req.get!("https://avatars.githubusercontent.com/u/25247695?s=200&v=4").body
               |> Vix.Vips.Image.new_from_buffer()
@@ -98,32 +96,26 @@ defmodule Example.HomeLive do
       function createPlayerHook(iceServers = [{ urls: "stun:stun.l.google.com:19302" }]) {
         return {
           async mounted() {
-            console.log("MOUNTED")
-
             this.pc = new RTCPeerConnection({ iceServers: iceServers });
-            this.el.srcObject = new MediaStream()
+            this.el.srcObject = new MediaStream();
 
             this.pc.ontrack = (event) => {
-              console.log("NEW TRACK", this.el)
               this.el.srcObject.addTrack(event.track);
-            }
+            };
 
-            this.pc.onicecandidate = (ev) => {
-              console.log("NEW BROWSER ICE CANDIDATE")
-              message = JSON.stringify({ type: "ice_candidate", data: ev.candidate });
+            this.pc.onicecandidate = (event) => {
+              console.log("[" + this.el.id + "] Sent ICE candidate:", event.candidate);
+              message = JSON.stringify({ type: "ice_candidate", data: event.candidate });
               this.pushEventTo(this.el, "webrtc_signaling", message);
             };
 
-            const eventName = "webrtc_signaling-" + this.el.id
+            const eventName = "webrtc_signaling-" + this.el.id;
             this.handleEvent(eventName, async (event) => {
-
-              console.log("NEW SIGNALING MESSAGE", event)
-
               const { type, data } = event;
 
               switch (type) {
                 case "sdp_offer":
-                  console.log("Received SDP offer:", data);
+                  console.log("[" + this.el.id + "] Received SDP offer:", data);
                   await this.pc.setRemoteDescription(data);
 
                   const answer = await this.pc.createAnswer();
@@ -131,11 +123,11 @@ defmodule Example.HomeLive do
 
                   message = JSON.stringify({ type: "sdp_answer", data: answer });
                   this.pushEventTo(this.el, "webrtc_signaling", message);
-                  console.log("Sent SDP answer:", answer);
+                  console.log("[" + this.el.id + "] Sent SDP answer:", answer);
 
                   break;
                 case "ice_candidate":
-                  console.log("Recieved ICE candidate:", data);
+                  console.log("[" + this.el.id + "] Recieved ICE candidate:", data);
                   await this.pc.addIceCandidate(data);
               }
             });

@@ -33,7 +33,7 @@ end
 defmodule Example.HomeLive do
   use Phoenix.LiveView, layout: {__MODULE__, :live}
 
-  alias Boombox.Live.{Capture, Player}
+  alias Boombox.Live.WebRTC.{Capture, Player}
 
   def mount(_params, _session, socket) do
     socket =

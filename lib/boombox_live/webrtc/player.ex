@@ -1,4 +1,4 @@
-defmodule Boombox.Live.Player do
+defmodule Boombox.Live.WebRTC.Player do
   @moduledoc ~S'''
   Component for sending and playing audio and video via WebRTC from a Phoenix app to a browser (browser subscribes).
 
