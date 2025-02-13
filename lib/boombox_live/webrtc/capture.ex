@@ -61,6 +61,8 @@ defmodule Boombox.Live.WebRTC.Capture do
 
   alias Membrane.WebRTC.SignalingChannel
 
+  require Logger
+
   @type t() :: struct()
 
   defstruct [:ice_servers, id: nil, signaling_channel: nil, video?: true, audio?: true]
@@ -124,14 +126,12 @@ defmodule Boombox.Live.WebRTC.Capture do
   @impl true
   def render(%{capture: nil} = assigns) do
     ~H"""
-    NOT RENDERED {inspect(self())}
     """
   end
 
   @impl true
   def render(assigns) do
     ~H"""
-    RENDERED  {inspect(self())}
     <div id={@capture.id} phx-hook="Capture" class={@class} style="display: none;"></div>
     """
   end
@@ -148,8 +148,10 @@ defmodule Boombox.Live.WebRTC.Capture do
       socket =
         receive do
           {^ref, %__MODULE__{} = capture} ->
-            IO.inspect(capture, label: "CAPTURE MOUNT")
-            SignalingChannel.register_peer(capture.signaling_channel, message_format: :json_data)
+            Logger.metadata([module: __MODULE__, id: capture.id])
+
+            capture.signaling_channel
+            |> SignalingChannel.register_peer(message_format: :json_data)
 
             media_constraints = %{
               "audio" => inspect(capture.audio?),
@@ -171,7 +173,9 @@ defmodule Boombox.Live.WebRTC.Capture do
 
   @impl true
   def handle_info({SignalingChannel, _pid, message, _metadata}, socket) do
-    # IO.inspect(message, label: "SIGNALING BOOMBOX -> BROWSER")
+    Logger.info("""
+    #{log_prefix(socket.assigns.capture.id)} Sent WebRTC signaling message: #{inspect(message, pretty: true)}
+    """)
 
     {:noreply,
      socket
@@ -180,8 +184,11 @@ defmodule Boombox.Live.WebRTC.Capture do
 
   @impl true
   def handle_event("webrtc_signaling", message, socket) do
-    # |> IO.inspect(label: "SIGNALING BROWSER -> BOOMBOX")
     message = Jason.decode!(message)
+
+    Logger.info("""
+    #{log_prefix(socket.assigns.capture.id)} Received WebRTC signaling message: #{inspect(message, pretty: true)}
+    """)
 
     if message["data"] do
       SignalingChannel.signal(
@@ -192,4 +199,6 @@ defmodule Boombox.Live.WebRTC.Capture do
 
     {:noreply, socket}
   end
+
+  defp log_prefix(id), do: [module: __MODULE__, id: id] |> inspect()
 end

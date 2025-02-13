@@ -49,8 +49,6 @@ defmodule Example.HomeLive do
             )
           end)
 
-        IO.inspect(socket, label: "PARENT MOUNT")
-
         _debug_task = Task.start_link(fn -> Debugger.debug(boombox_pid) end)
 
         socket

@@ -61,6 +61,8 @@ defmodule Boombox.Live.WebRTC.Player do
 
   alias Membrane.WebRTC.SignalingChannel
 
+  require Logger
+
   @type t() :: struct()
 
   defstruct [:video?, :audio?, :ice_servers, id: nil, signaling_channel: nil]
@@ -148,8 +150,6 @@ defmodule Boombox.Live.WebRTC.Player do
   def mount(_params, %{"class" => class}, socket) do
     socket = assign(socket, class: class, player: nil)
 
-    IO.inspect({self(), connected?(socket)}, label: "MOUNT BEGIN")
-
     if connected?(socket) do
       ref = make_ref()
       send(socket.parent_pid, {__MODULE__, {:connected, ref, self(), %{}}})
@@ -157,8 +157,8 @@ defmodule Boombox.Live.WebRTC.Player do
       socket =
         receive do
           {^ref, %__MODULE__{} = player} ->
-            IO.inspect(player, label: "PLAYER MOUNT")
-            SignalingChannel.register_peer(player.signaling_channel, message_format: :json_data)
+            player.signaling_channel
+            |> SignalingChannel.register_peer(message_format: :json_data)
 
             socket |> assign(player: player)
         after
@@ -173,7 +173,9 @@ defmodule Boombox.Live.WebRTC.Player do
 
   @impl true
   def handle_info({SignalingChannel, _pid, message, _metadata}, socket) do
-    IO.inspect(message, label: "SIGNALING BOOMBOX -> BROWSER")
+    Logger.info("""
+    #{log_prefix(socket.assigns.player.id)} Sent WebRTC signaling message: #{inspect(message, pretty: true)}
+    """)
 
     {:noreply,
      socket
@@ -182,7 +184,11 @@ defmodule Boombox.Live.WebRTC.Player do
 
   @impl true
   def handle_event("webrtc_signaling", message, socket) do
-    message = Jason.decode!(message) |> IO.inspect(label: "SIGNALING BROWSER -> BOOMBOX")
+    message = Jason.decode!(message)
+
+    Logger.info("""
+    #{log_prefix(socket.assigns.player.id)} Received WebRTC signaling message: #{inspect(message, pretty: true)}
+    """)
 
     if message["data"] do
       SignalingChannel.signal(
@@ -193,4 +199,6 @@ defmodule Boombox.Live.WebRTC.Player do
 
     {:noreply, socket}
   end
+
+  defp log_prefix(id), do: [module: __MODULE__, id: id] |> inspect()
 end
