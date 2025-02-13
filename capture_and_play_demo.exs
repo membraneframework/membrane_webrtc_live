@@ -16,20 +16,6 @@ defmodule Example.ErrorView do
   def render(template, _), do: Phoenix.Controller.status_message_from_template(template)
 end
 
-defmodule Debugger do
-  def debug(pid) do
-    if Process.alive?(pid) do
-      IO.puts("ALIVE #{inspect(pid)} #{self() |> inspect()}")
-    else
-      IO.puts("NOT ALIVE #{inspect(pid)} #{self() |> inspect()}")
-    end
-
-    Process.sleep(1000)
-
-    debug(pid)
-  end
-end
-
 defmodule Example.HomeLive do
   use Phoenix.LiveView, layout: {__MODULE__, :live}
 
@@ -49,8 +35,6 @@ defmodule Example.HomeLive do
             )
           end)
 
-        _debug_task = Task.start_link(fn -> Debugger.debug(boombox_pid) end)
-
         socket
         |> Capture.attach(
           id: "mediaCapture",
@@ -61,11 +45,6 @@ defmodule Example.HomeLive do
         |> Player.attach(
           id: "videoPlayer",
           signaling_channel: egress_signaling
-        )
-        |> assign(
-          ingress_signaling: ingress_signaling,
-          egress_signaling: egress_signaling,
-          boombox: boombox_pid
         )
       else
         socket
