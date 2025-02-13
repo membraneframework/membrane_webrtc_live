@@ -168,14 +168,6 @@ defmodule Example.HomeLive do
     ~H"""
     """
   end
-
-  def handle_event("inc", _params, socket) do
-    {:noreply, assign(socket, :count, socket.assigns.count + 1)}
-  end
-
-  def handle_event("dec", _params, socket) do
-    {:noreply, assign(socket, :count, socket.assigns.count - 1)}
-  end
 end
 
 defmodule Example.Router do

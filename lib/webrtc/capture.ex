@@ -1,4 +1,4 @@
-defmodule Boombox.Live.Player do
+defmodule Boombox.Live.Capture do
   @moduledoc ~S'''
   Component for sending and playing audio and video via WebRTC from a Phoenix app to a browser (browser subscribes).
 
@@ -63,27 +63,20 @@ defmodule Boombox.Live.Player do
 
   @type t() :: struct()
 
-  defstruct [:video?, :audio?, :ice_servers, id: nil, signaling_channel: nil]
+  defstruct [:ice_servers, id: nil, signaling_channel: nil, video?: true, audio?: true]
 
   attr(:socket, Phoenix.LiveView.Socket, required: true, doc: "Parent live view socket")
 
-  attr(:player, __MODULE__,
-    required: true,
-    doc: """
-    Player struct. It is used to pass player id and publisher id to the newly created live view via live view session.
-    This data is then used to do a handshake between parent live view and child live view during which child live view receives
-    the whole Player struct.
-    """
-  )
+  attr(:capture, __MODULE__, required: true)
 
   attr(:class, :string, default: nil, doc: "CSS/Tailwind classes for styling HTMLVideoElement")
 
   @doc """
-  Helper function for rendering Player live view.
+  Helper function for rendering Capture live view.
   """
   def live_render(assigns) do
     ~H"""
-    <%= live_render(@socket, __MODULE__, id: "#{@player.id}-lv", session: %{"class" => @class}) %>
+    <%= live_render(@socket, __MODULE__, id: "#{@capture.id}-lv", session: %{"class" => @class}) %>
     """
   end
 
@@ -93,7 +86,7 @@ defmodule Boombox.Live.Player do
   Created struct is saved in socket's assigns and has to be passed to `LiveExWebRTC.Player.live_render/1`.
 
   Options:
-  * `id` - player id. This is typically your user id (if there is users database).
+  * `id` - capture id. This is typically your user id (if there is users database).
   It is used to identify live view and generated HTML video player.
   * `class` - a list of CSS/Tailwind classes that will be applied to the HTMLVideoPlayer. Defaults to "".
   """
@@ -109,16 +102,16 @@ defmodule Boombox.Live.Player do
         ice_servers: [%{urls: "stun:stun.l.google.com:19302"}]
       ])
 
-    player = struct!(__MODULE__, opts)
+    capture = struct!(__MODULE__, opts)
 
     socket
-    |> assign(player: player)
-    |> attach_hook(:player_handshake, :handle_info, &handshake/2)
+    |> assign(capture: capture)
+    |> attach_hook(:capture_handshake, :handle_info, &handshake/2)
   end
 
   defp handshake({__MODULE__, {:connected, ref, child_pid, _meta}}, socket) do
-    # child live view is connected, send it player struct
-    send(child_pid, {ref, socket.assigns.player})
+    # child live view is connected, send it capture struct
+    send(child_pid, {ref, socket.assigns.capture})
     {:halt, socket}
   end
 
@@ -129,7 +122,7 @@ defmodule Boombox.Live.Player do
   ## CALLBACKS
 
   @impl true
-  def render(%{player: nil} = assigns) do
+  def render(%{capture: nil} = assigns) do
     ~H"""
     NOT RENDERED {inspect(self())}
     """
@@ -139,16 +132,14 @@ defmodule Boombox.Live.Player do
   def render(assigns) do
     ~H"""
     RENDERED  {inspect(self())}
-    <video id={@player.id} phx-hook="Player" class={@class} controls autoplay muted></video>
+    <div id={@capture.id} phx-hook="Capture" class={@class} style="display: none;"></div>
     """
   end
 
   # todo: simplify the function below later, but for now it should work fine
   @impl true
   def mount(_params, %{"class" => class}, socket) do
-    socket = assign(socket, class: class, player: nil)
-
-    IO.inspect({self(), connected?(socket)}, label: "MOUNT BEGIN")
+    socket = assign(socket, class: class, capture: nil)
 
     if connected?(socket) do
       ref = make_ref()
@@ -156,11 +147,18 @@ defmodule Boombox.Live.Player do
 
       socket =
         receive do
-          {^ref, %__MODULE__{} = player} ->
-            IO.inspect(player, label: "PLAYER MOUNT")
-            SignalingChannel.register_peer(player.signaling_channel, message_format: :json_data)
+          {^ref, %__MODULE__{} = capture} ->
+            IO.inspect(capture, label: "CAPTURE MOUNT")
+            SignalingChannel.register_peer(capture.signaling_channel, message_format: :json_data)
 
-            socket |> assign(player: player)
+            media_constraints = %{
+              "audio" => inspect(capture.audio?),
+              "video" => inspect(capture.video?)
+            }
+
+            socket
+            |> assign(capture: capture)
+            |> push_event("media_constraints-#{capture.id}", media_constraints)
         after
           5000 -> exit(:timeout)
         end
@@ -173,20 +171,21 @@ defmodule Boombox.Live.Player do
 
   @impl true
   def handle_info({SignalingChannel, _pid, message, _metadata}, socket) do
-    IO.inspect(message, label: "SIGNALING BOOMBOX -> BROWSER")
+    # IO.inspect(message, label: "SIGNALING BOOMBOX -> BROWSER")
 
     {:noreply,
      socket
-     |> push_event("webrtc_signaling-#{socket.assigns.player.id}", message)}
+     |> push_event("webrtc_signaling-#{socket.assigns.capture.id}", message)}
   end
 
   @impl true
   def handle_event("webrtc_signaling", message, socket) do
-    message = Jason.decode!(message) |> IO.inspect(label: "SIGNALING BROWSER -> BOOMBOX")
+    # |> IO.inspect(label: "SIGNALING BROWSER -> BOOMBOX")
+    message = Jason.decode!(message)
 
     if message["data"] do
       SignalingChannel.signal(
-        socket.assigns.player.signaling_channel,
+        socket.assigns.capture.signaling_channel,
         message
       )
     end
