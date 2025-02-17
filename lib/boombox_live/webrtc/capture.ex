@@ -78,7 +78,7 @@ defmodule Boombox.Live.WebRTC.Capture do
   """
   def live_render(assigns) do
     ~H"""
-    <%= live_render(@socket, __MODULE__, id: "#{@capture.id}-lv", session: %{"class" => @class}) %>
+    <%= live_render(@socket, __MODULE__, id: "#{@capture.id}-lv", session: %{"class" => @class, "id" => @capture.id}) %>
     """
   end
 
@@ -106,14 +106,25 @@ defmodule Boombox.Live.WebRTC.Capture do
 
     capture = struct!(__MODULE__, opts)
 
+    all_captures =
+      socket.assigns
+      |> Map.get(__MODULE__, %{})
+      |> Map.put(capture.id, capture)
+
     socket
-    |> assign(capture: capture)
+    |> assign(__MODULE__, all_captures)
     |> attach_hook(:capture_handshake, :handle_info, &handshake/2)
   end
 
-  defp handshake({__MODULE__, {:connected, ref, child_pid, _meta}}, socket) do
+  defp handshake({__MODULE__, {:connected, capture_id, child_pid, _meta}}, socket) do
     # child live view is connected, send it capture struct
-    send(child_pid, {ref, socket.assigns.capture})
+    capture =
+      socket.assings
+      |> Map.fetch!(__MODULE__)
+      |> Map.fetch!(capture_id)
+
+    send(child_pid, capture)
+
     {:halt, socket}
   end
 
@@ -138,18 +149,15 @@ defmodule Boombox.Live.WebRTC.Capture do
 
   # todo: simplify the function below later, but for now it should work fine
   @impl true
-  def mount(_params, %{"class" => class}, socket) do
+  def mount(_params, %{"class" => class, "id" => id}, socket) do
     socket = assign(socket, class: class, capture: nil)
 
     if connected?(socket) do
-      ref = make_ref()
-      send(socket.parent_pid, {__MODULE__, {:connected, ref, self(), %{}}})
+      send(socket.parent_pid, {__MODULE__, {:connected, id, self(), %{}}})
 
       socket =
         receive do
-          {^ref, %__MODULE__{} = capture} ->
-            Logger.metadata([module: __MODULE__, id: capture.id])
-
+          %__MODULE__{} = capture ->
             capture.signaling_channel
             |> SignalingChannel.register_peer(message_format: :json_data)
 
