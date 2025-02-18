@@ -22,10 +22,18 @@ import { Socket } from "phoenix";
 import { LiveSocket } from "phoenix_live_view";
 import topbar from "../vendor/topbar";
 
+import { createPublisherHook, createPlayerHook } from "live_ex_webrtc";
+
+let Hooks = {};
+const iceServers = [{ urls: "stun:stun.l.google.com:19302" }];
+Hooks.Publisher = createPublisherHook(iceServers);
+Hooks.Player = createPlayerHook(iceServers);
+
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content");
 let liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: { _csrf_token: csrfToken },
+  hooks: Hooks,
 });
 
 // Show progress bar on live navigation and form submits
