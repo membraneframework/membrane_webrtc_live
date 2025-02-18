@@ -2,11 +2,11 @@ defmodule Boombox.Live.Mixfile do
   use Mix.Project
 
   @version "0.1.0"
-  @github_url "https://github.com/membraneframework/membrane_template_plugin"
+  @github_url "https://github.com/membraneframework/boombox_live"
 
   def project do
     [
-      app: :membrane_template_plugin,
+      app: :boombox_live,
       version: @version,
       elixir: "~> 1.13",
       elixirc_paths: elixirc_paths(Mix.env()),

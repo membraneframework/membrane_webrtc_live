@@ -1,4 +1,4 @@
-function createCaptureHook(iceServers = [{ urls: "stun:stun.l.google.com:19302" }]) {
+export function createCaptureHook(iceServers = [{ urls: "stun:stun.l.google.com:19302" }]) {
   return {
     async mounted() {
       this.handleEvent("media_constraints-" + this.el.id, async (mediaConstraints) => {

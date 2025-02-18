@@ -13,4 +13,6 @@ defmodule ExampleProjectWeb.Router do
   pipeline :api do
     plug :accepts, ["json"]
   end
+
+  live "/", ExampleProjectWeb.HomeLive
 end

@@ -32,6 +32,8 @@ defmodule ExampleProject.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
+      {:boombox, path: "../../boombox"},
+      {:boombox_live, path: ".."},
       {:phoenix, "~> 1.7.19"},
       {:phoenix_html, "~> 4.1"},
       {:phoenix_live_reload, "~> 1.2", only: :dev},

@@ -8,7 +8,6 @@ defmodule ExampleProject.Application do
   @impl true
   def start(_type, _args) do
     children = [
-      ExampleProjectWeb.Telemetry,
       {DNSCluster, query: Application.get_env(:example_project, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: ExampleProject.PubSub},
       # Start a worker by calling: ExampleProject.Worker.start_link(arg)

@@ -1,9 +1,11 @@
-defmodule ExampleProject.HomeLive do
+defmodule ExampleProjectWeb.HomeLive do
   use ExampleProjectWeb, :live_view
 
   alias Boombox.Live.WebRTC.{Capture, Player}
 
   def mount(_params, _session, socket) do
+    IO.inspect(socket, label: "MOUNT")
+
     socket =
       if connected?(socket) do
         ingress_signaling = Membrane.WebRTC.SignalingChannel.new()
@@ -44,13 +46,20 @@ defmodule ExampleProject.HomeLive do
 
   def render(%{capture: %Capture{}, player: %Player{}} = assigns) do
     ~H"""
-    <Capture.live_render socket={@socket}, capture={@capture} />
+    <script>
+      console.log(window.liveSocket)
+    </script>
+
+    <Capture.live_render socket={@socket} capture={@capture} />
     <Player.live_render socket={@socket} player={@player} />
     """
   end
 
   def render(assigns) do
     ~H"""
+    <script>
+      console.log(window.liveSocket)
+    </script>
     """
   end
 end

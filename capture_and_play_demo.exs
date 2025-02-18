@@ -184,7 +184,7 @@ defmodule Example.HomeLive do
 
   def render(%{capture: %Capture{}, player: %Player{}} = assigns) do
     ~H"""
-    <Capture.live_render socket={@socket}, capture={@capture} />
+    <Capture.live_render socket={@socket} capture={@capture} />
     <Player.live_render socket={@socket} player={@player} />
     """
   end

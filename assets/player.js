@@ -1,4 +1,4 @@
-function createPlayerHook(iceServers = [{ urls: "stun:stun.l.google.com:19302" }]) {
+export function createPlayerHook(iceServers = [{ urls: "stun:stun.l.google.com:19302" }]) {
   return {
     async mounted() {
       this.pc = new RTCPeerConnection({ iceServers: iceServers });

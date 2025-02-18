@@ -22,11 +22,15 @@ import { Socket } from "phoenix";
 import { LiveSocket } from "phoenix_live_view";
 import topbar from "../vendor/topbar";
 
-import { createPublisherHook, createPlayerHook } from "live_ex_webrtc";
+console.log("A");
+
+import { createCaptureHook, createPlayerHook } from "boombox_live";
+
+console.log("B");
 
 let Hooks = {};
 const iceServers = [{ urls: "stun:stun.l.google.com:19302" }];
-Hooks.Publisher = createPublisherHook(iceServers);
+Hooks.Capture = createCaptureHook(iceServers);
 Hooks.Player = createPlayerHook(iceServers);
 
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content");
@@ -43,9 +47,10 @@ window.addEventListener("phx:page-loading-stop", (_info) => topbar.hide());
 
 // connect if there are any LiveViews on the page
 liveSocket.connect();
+console.log("LiveView WebSocket connected");
 
 // expose liveSocket on window for web console debug logs and latency simulation:
-// >> liveSocket.enableDebug()
+// liveSocket.enableDebug();
 // >> liveSocket.enableLatencySim(1000)  // enabled for duration of browser session
 // >> liveSocket.disableLatencySim()
 window.liveSocket = liveSocket;
