@@ -27,7 +27,7 @@ defmodule Example.HomeLive do
         ingress_signaling = Membrane.WebRTC.SignalingChannel.new()
         egress_signaling = Membrane.WebRTC.SignalingChannel.new()
 
-        {:ok, boombox_pid} =
+        {:ok, _boombox_pid} =
           Task.start_link(fn ->
             Boombox.run(
               input: {:webrtc, ingress_signaling},
@@ -35,16 +35,23 @@ defmodule Example.HomeLive do
             )
           end)
 
+        socket =
+          socket
+          |> Capture.attach(
+            id: "mediaCapture",
+            signaling_channel: ingress_signaling,
+            audio?: false,
+            video?: true
+          )
+          |> Player.attach(
+            id: "videoPlayer",
+            signaling_channel: egress_signaling
+          )
+
         socket
-        |> Capture.attach(
-          id: "mediaCapture",
-          signaling_channel: ingress_signaling,
-          audio?: false,
-          video?: true
-        )
-        |> Player.attach(
-          id: "videoPlayer",
-          signaling_channel: egress_signaling
+        |> assign(
+          capture: Capture.get_attached(socket, "mediaCapture"),
+          player: Player.get_attached(socket, "videoPlayer")
         )
       else
         socket

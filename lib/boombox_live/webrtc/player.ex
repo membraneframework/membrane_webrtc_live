@@ -120,8 +120,11 @@ defmodule Boombox.Live.WebRTC.Player do
 
     socket
     |> assign(__MODULE__, all_players)
+    |> detach_hook(:player_handshake, :handle_info)
     |> attach_hook(:player_handshake, :handle_info, &handshake/2)
   end
+
+  def get_attached(socket, id), do: socket.assigns[__MODULE__][id]
 
   defp handshake({__MODULE__, {:connected, id, child_pid, _meta}}, socket) do
     # child live view is connected, send it player struct
@@ -144,25 +147,24 @@ defmodule Boombox.Live.WebRTC.Player do
   @impl true
   def render(%{player: nil} = assigns) do
     ~H"""
-    NOT RENDERED {inspect(self())}
     """
   end
 
   @impl true
   def render(assigns) do
     ~H"""
-    RENDERED  {inspect(self())}
     <video id={@player.id} phx-hook="Player" class={@class} controls autoplay muted></video>
     """
   end
 
-  # todo: simplify the function below later, but for now it should work fine
   @impl true
   def mount(_params, %{"class" => class, "id" => id}, socket) do
+    IO.inspect(self(), label: "DUPA")
+
     socket = assign(socket, class: class, player: nil)
 
     if connected?(socket) do
-      send(socket.parent_pid, {__MODULE__, {:connected, ref, self(), %{}}})
+      send(socket.parent_pid, {__MODULE__, {:connected, id, self(), %{}}})
 
       socket =
         receive do

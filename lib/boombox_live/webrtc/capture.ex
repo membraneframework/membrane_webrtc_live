@@ -113,13 +113,16 @@ defmodule Boombox.Live.WebRTC.Capture do
 
     socket
     |> assign(__MODULE__, all_captures)
+    |> detach_hook(:capture_handshake, :handle_info)
     |> attach_hook(:capture_handshake, :handle_info, &handshake/2)
   end
+
+  def get_attached(socket, id), do: socket.assigns[__MODULE__][id]
 
   defp handshake({__MODULE__, {:connected, capture_id, child_pid, _meta}}, socket) do
     # child live view is connected, send it capture struct
     capture =
-      socket.assings
+      socket.assigns
       |> Map.fetch!(__MODULE__)
       |> Map.fetch!(capture_id)
 
@@ -147,7 +150,6 @@ defmodule Boombox.Live.WebRTC.Capture do
     """
   end
 
-  # todo: simplify the function below later, but for now it should work fine
   @impl true
   def mount(_params, %{"class" => class, "id" => id}, socket) do
     socket = assign(socket, class: class, capture: nil)
