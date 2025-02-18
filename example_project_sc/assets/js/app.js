@@ -22,11 +22,7 @@ import { Socket } from "phoenix";
 import { LiveSocket } from "phoenix_live_view";
 import topbar from "../vendor/topbar";
 
-console.log("A");
-
 import { createCaptureHook, createPlayerHook } from "boombox_live";
-
-console.log("B");
 
 let Hooks = {};
 const iceServers = [{ urls: "stun:stun.l.google.com:19302" }];
