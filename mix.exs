@@ -37,9 +37,7 @@ defmodule Membrane.WebRTC.Live.Mixfile do
 
   defp deps do
     [
-      {:membrane_webrtc_plugin,
-       github: "membraneframework/membrane_webrtc_plugin",
-       ref: "c0a4c66cc3b7cd829579a325817ad1727b4474fe"},
+      {:membrane_webrtc_plugin, "~> 0.23.3"},
       {:plug_cowboy, "~> 2.5"},
       {:phoenix_live_view, "~> 1.0"},
       {:phoenix, "~> 1.7"},
