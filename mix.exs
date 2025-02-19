@@ -1,12 +1,12 @@
-defmodule Boombox.Live.Mixfile do
+defmodule Membrane.WebRTC.Live.Mixfile do
   use Mix.Project
 
   @version "0.1.0"
-  @github_url "https://github.com/membraneframework/boombox_live"
+  @github_url "https://github.com/membraneframework/membrane_webrtc_live"
 
   def project do
     [
-      app: :boombox_live,
+      app: :membrane_webrtc_live,
       version: @version,
       elixir: "~> 1.13",
       elixirc_paths: elixirc_paths(Mix.env()),
@@ -37,9 +37,9 @@ defmodule Boombox.Live.Mixfile do
 
   defp deps do
     [
-      # {:boombox, "~> 0.1.0"},
-      {:boombox, path: "../boombox"},
-      # {:membrane_webrtc_plugin, "~> 0.23.2"},
+      {:membrane_webrtc_plugin,
+       github: "membraneframework/membrane_webrtc_plugin",
+       ref: "c0a4c66cc3b7cd829579a325817ad1727b4474fe"},
       {:plug_cowboy, "~> 2.5"},
       {:phoenix_live_view, "~> 1.0"},
       {:phoenix, "~> 1.7"},

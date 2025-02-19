@@ -32,7 +32,13 @@ defmodule ExampleProject.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
-      {:boombox_live, path: ".."},
+      {:boombox,
+       github: "membraneframework/boombox", ref: "0dae52a0d3023f32c3039ae1eeb353e1433aa2a1"},
+      {:membrane_webrtc_live, path: "../"},
+      {:membrane_webrtc_plugin,
+       github: "membraneframework/membrane_webrtc_plugin",
+       ref: "c0a4c66cc3b7cd829579a325817ad1727b4474fe",
+       override: true},
       {:phoenix, "~> 1.7.19"},
       {:phoenix_html, "~> 4.1"},
       {:phoenix_live_reload, "~> 1.2", only: :dev},

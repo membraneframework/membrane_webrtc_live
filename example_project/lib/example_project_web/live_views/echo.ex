@@ -1,10 +1,8 @@
 defmodule ExampleProjectWeb.LiveViews.Echo do
   use ExampleProjectWeb, :live_view
-  alias Boombox.Live.WebRTC.{Capture, Player}
+  alias Membrane.WebRTC.Live.{Capture, Player}
 
   def mount(_params, _session, socket) do
-    IO.inspect(socket, label: "MOUNT")
-
     socket =
       if connected?(socket) do
         ingress_signaling = Membrane.WebRTC.SignalingChannel.new()

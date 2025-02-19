@@ -1,4 +1,4 @@
-defmodule Boombox.Live.WebRTC.Player do
+defmodule Membrane.WebRTC.Live.Player do
   @moduledoc ~S'''
   Component for sending and playing audio and video via WebRTC from a Phoenix app to a browser (browser subscribes).
 
@@ -159,8 +159,6 @@ defmodule Boombox.Live.WebRTC.Player do
 
   @impl true
   def mount(_params, %{"class" => class, "id" => id}, socket) do
-    IO.inspect(self(), label: "DUPA")
-
     socket = assign(socket, class: class, player: nil)
 
     if connected?(socket) do

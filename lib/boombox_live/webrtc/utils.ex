@@ -1,4 +1,4 @@
-defmodule Boombox.Live.WebRTC.Utils do
+defmodule Membrane.WebRTC.Live.Utils do
   @moduledoc false
 
   defmacro log_prefix(id) do
