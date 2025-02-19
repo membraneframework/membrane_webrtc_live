@@ -1,21 +1,12 @@
 defmodule Membrane.WebRTC.Live.Player do
   @moduledoc ~S'''
-  Component for sending and playing audio and video via WebRTC from a Phoenix app to a browser (browser subscribes).
+  LiveView for playing audio and video get via WebRTC from `Membrane.WebRTC.Sink`.
 
   It:
-  * renders a single HTMLVideoElement
-  * creates WebRTC PeerConnection both on the server and client side
-  * connects those two peer connections negotiating a single audio and a single video track
-  * attaches audio and video on the client side to the HTMLVideoElement
-  * subscribes to the configured PubSub where it expects audio and video packets and sends them to the client side.
-
-  When `LiveExWebRTC.Publisher` is used, audio an video packets are delivered automatically,
-  assuming both components are configured with the same PubSub.
-
-  If `LiveExWebRTC.Publisher` is not used, you should send packets to the
-  `streams:audio:#{publisher_id}` and `streams:video:#{publisher_id}` topics.
-
-  Keyframe requests are sent under `publishers:#{publisher_id}` topic.
+  * renders a single HTMLVideoElement.
+  * creates WebRTC PeerConnection on the browser side.
+  * forwards signaling messages between the browser and `Membrane.WebRTC.Sink` via `Membrane.WebRTC.SignalingChannel`.
+  * attaches audio and video from the Elixir to the HTMLVideoElement.
 
   ## JavaScript Hook
 
@@ -24,7 +15,7 @@ defmodule Membrane.WebRTC.Live.Player do
   For example:
 
   ```javascript
-  import { createPlayerHook } from "live_ex_webrtc";
+  import { createPlayerHook } from "membrane_webrtc_live";
   let Hooks = {};
   const iceServers = [{ urls: "stun:stun.l.google.com:19302" }];
   Hooks.Player = createPlayerHook(iceServers);
@@ -37,10 +28,10 @@ defmodule Membrane.WebRTC.Live.Player do
   ## Examples
 
   ```elixir
-  defmodule LiveTwitchWeb.StreamViewerLive do
-    use LiveTwitchWeb, :live_view
+  defmodule StreamerWeb.StreamViewerLive do
+    use StreamerWeb, :live_view
 
-    alias LiveExWebRTC.Player
+    alias Membrane.WebRTC.Live.Player
 
     @impl true
     def render(assigns) do
@@ -51,7 +42,12 @@ defmodule Membrane.WebRTC.Live.Player do
 
     @impl true
     def mount(_params, _session, socket) do
-      socket = Player.attach(socket, id: "player", publisher_id: "publisher", pubsub: LiveTwitch.PubSub)
+      signaling = Membrane.WebRTC.SignalingChannel.new()
+      {:ok, _supervisor, _pipelne} = Membrane.Pipeline.start_link(MyPipeline, signaling: signaling)
+
+      socket = Player.attach(socket, id: "player", signaling: signaling)
+      socket = assign(socket, :player, Player.get_attached(socket, "player"))
+
       {:ok, socket}
     end
   end
