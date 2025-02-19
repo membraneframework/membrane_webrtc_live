@@ -43,10 +43,6 @@ defmodule ExampleProjectWeb.LiveViews.Echo do
 
   def render(%{capture: %Capture{}, player: %Player{}} = assigns) do
     ~H"""
-    <script>
-      console.log(window.liveSocket)
-    </script>
-
     <Capture.live_render socket={@socket} capture={@capture} />
     <Player.live_render socket={@socket} player={@player} />
     """
@@ -54,9 +50,6 @@ defmodule ExampleProjectWeb.LiveViews.Echo do
 
   def render(assigns) do
     ~H"""
-    <script>
-      console.log(window.liveSocket)
-    </script>
     """
   end
 end
