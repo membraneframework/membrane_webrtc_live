@@ -28,7 +28,7 @@ end
 
 ## Usage 
 
-To use `Phoenix.LiveView`s from this repository, you have to use related JS hooks. To do so, add following snippet to `assets/js/app.js`
+To use `Phoenix.LiveView`s from this repository, you have to use related JS hooks. To do so, add the following code snippet to `assets/js/app.js`
 
 ```js
 import { createCaptureHook, createPlayerHook } from "membrane_webrtc_live";
