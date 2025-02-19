@@ -69,9 +69,13 @@ defmodule Membrane.WebRTC.Live.Capture do
 
   attr(:socket, Phoenix.LiveView.Socket, required: true, doc: "Parent live view socket")
 
-  attr(:capture, __MODULE__, required: true)
+  attr(:capture, __MODULE__, required: true, doc: """
+  #{inspect(__MODULE__)} struct. It is used to pass player id to the newly created live view via live view session.
+  This data is then used to do a handshake between parent live view and child live view during which child live view
+  receives the whole #{inspect(__MODULE__)} struct.
+  """)
 
-  attr(:class, :string, default: nil, doc: "CSS/Tailwind classes for styling HTMLVideoElement")
+  attr(:class, :string, default: nil, doc: "CSS/Tailwind classes for styling")
 
   @doc """
   Helper function for rendering Capture live view.

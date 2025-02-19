@@ -48,7 +48,7 @@ new LiveSocket("/live", Socket, {
 });
 ```
 
-To see full usage example, take a look at `example_project/` directory in this repository (take a look especially at `example_project/assets/js/app.js` and `example_project/lib/example_project_web/live_views/echo.ex`).
+To see the full usage example, you can go to `example_project/` directory in this repository (take a look especially at `example_project/assets/js/app.js` and `example_project/lib/example_project_web/live_views/echo.ex`).
 
 ## Copyright and License
 
