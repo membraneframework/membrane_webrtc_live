@@ -5,8 +5,8 @@ defmodule ExampleProjectWeb.LiveViews.Echo do
   def mount(_params, _session, socket) do
     socket =
       if connected?(socket) do
-        ingress_signaling = Membrane.WebRTC.SignalingChannel.new()
-        egress_signaling = Membrane.WebRTC.SignalingChannel.new()
+        ingress_signaling = Membrane.WebRTC.Signaling.new()
+        egress_signaling = Membrane.WebRTC.Signaling.new()
 
         {:ok, _boombox_pid} =
           Task.start_link(fn ->
@@ -20,13 +20,13 @@ defmodule ExampleProjectWeb.LiveViews.Echo do
           socket
           |> Capture.attach(
             id: "mediaCapture",
-            signaling_channel: ingress_signaling,
+            signaling: ingress_signaling,
             audio?: false,
             video?: true
           )
           |> Player.attach(
             id: "videoPlayer",
-            signaling_channel: egress_signaling
+            signaling: egress_signaling
           )
 
         socket

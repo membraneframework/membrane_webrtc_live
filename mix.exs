@@ -37,7 +37,7 @@ defmodule Membrane.WebRTC.Live.Mixfile do
 
   defp deps do
     [
-      {:membrane_webrtc_plugin, "~> 0.23.3"},
+      {:membrane_webrtc_plugin, "~> 0.24.0"},
       {:plug_cowboy, "~> 2.5"},
       {:phoenix_live_view, "~> 1.0"},
       {:phoenix, "~> 1.7"},

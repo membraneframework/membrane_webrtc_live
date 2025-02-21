@@ -4,12 +4,12 @@ defmodule Membrane.WebRTC.Live.Capture do
 
   It:
   * creates WebRTC PeerConnection on the browser side.
-  * forwards signaling messages between the browser and `Membrane.WebRTC.Source` via `Membrane.WebRTC.SignalingChannel`.
+  * forwards signaling messages between the browser and `Membrane.WebRTC.Source` via `Membrane.WebRTC.Signaling`.
   * sends audio and video streams to the related `Membrane.WebRTC.Source`.
 
   ## JavaScript Hook
 
-  Player live view requires JavaScript hook to be registered under `Capture` name.
+  Capture live view requires JavaScript hook to be registered under `Capture` name.
   The hook can be created using `createCaptureHook` function.
   For example:
 
@@ -41,7 +41,7 @@ defmodule Membrane.WebRTC.Live.Capture do
 
     @impl true
     def mount(_params, _session, socket) do
-      signaling = Membrane.WebRTC.SignalingChannel.new()
+      signaling = Membrane.WebRTC.Signaling.new()
       {:ok, _supervisor, _pipelne} = Membrane.Pipeline.start_link(MyPipeline, signaling: signaling)
 
       socket = Capture.attach(socket, id: "capture", signaling: signaling)
@@ -54,20 +54,20 @@ defmodule Membrane.WebRTC.Live.Capture do
   '''
   use Phoenix.LiveView
 
-  alias Membrane.WebRTC.SignalingChannel
+  alias Membrane.WebRTC.Signaling
 
   require Logger
 
   @type t() :: struct()
 
-  defstruct [:ice_servers, id: nil, signaling_channel: nil, video?: true, audio?: true]
+  defstruct [:ice_servers, id: nil, signaling: nil, video?: true, audio?: true]
 
   attr(:socket, Phoenix.LiveView.Socket, required: true, doc: "Parent live view socket")
 
   attr(:capture, __MODULE__,
     required: true,
     doc: """
-    #{inspect(__MODULE__)} struct. It is used to pass player id to the newly created live view via live view session.
+    #{inspect(__MODULE__)} struct. It is used to pass capture id to the newly created live view via live view session.
     This data is then used to do a handshake between parent live view and child live view during which child live view
     receives the whole #{inspect(__MODULE__)} struct.
     """
@@ -100,7 +100,7 @@ defmodule Membrane.WebRTC.Live.Capture do
       opts
       |> Keyword.validate!([
         :id,
-        :signaling_channel,
+        :signaling,
         video?: true,
         audio?: true,
         ice_servers: [%{urls: "stun:stun.l.google.com:19302"}]
@@ -162,8 +162,8 @@ defmodule Membrane.WebRTC.Live.Capture do
       socket =
         receive do
           %__MODULE__{} = capture ->
-            capture.signaling_channel
-            |> SignalingChannel.register_peer(message_format: :json_data)
+            capture.signaling
+            |> Signaling.register_peer(message_format: :json_data)
 
             media_constraints = %{
               "audio" => inspect(capture.audio?),
@@ -184,7 +184,7 @@ defmodule Membrane.WebRTC.Live.Capture do
   end
 
   @impl true
-  def handle_info({SignalingChannel, _pid, message, _metadata}, socket) do
+  def handle_info({Signaling, _pid, message, _metadata}, socket) do
     Logger.info("""
     #{log_prefix(socket.assigns.capture.id)} Sent WebRTC signaling message: #{inspect(message, pretty: true)}
     """)
@@ -203,8 +203,8 @@ defmodule Membrane.WebRTC.Live.Capture do
     """)
 
     if message["data"] do
-      SignalingChannel.signal(
-        socket.assigns.capture.signaling_channel,
+      Signaling.signal(
+        socket.assigns.capture.signaling,
         message
       )
     end

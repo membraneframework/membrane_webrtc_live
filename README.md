@@ -23,8 +23,8 @@ end
 ## Modules
 
 `Membrane.WebRTC.Live` comes with two `Phoenix.LiveView`s: 
- - `Membrane.WebRTC.Live.Capture` - exchanges WebRTC signaling messages between `Membrane.WebRTC.Source` and the browser. It expects the same `Membrane.WebRTC.SignalingChannel` that has been passed to the related `Membrane.WebRTC.Source`. As a result, `Membrane.Webrtc.Source` will return the media stream captured from the browser, where `Membrane.WebRTC.Live.Capture` has been rendered.
- - `Membrane.WebRTC.Live.Player` - exchanges WebRTC signaling messages between `Membrane.WebRTC.Sink` and the browser. It expects the same `Membrane.WebRTC.SignalingChannel` that has been passed to the related `Membrane.WebRTC.Sink`. As a result, `Membrane.WebRTC.Live.Player` will play media streams passed to the related `Membrane.WebRTC.Sink`. Currently supports up to one video stream and up to one audio stream.
+ - `Membrane.WebRTC.Live.Capture` - exchanges WebRTC signaling messages between `Membrane.WebRTC.Source` and the browser. It expects the same `Membrane.WebRTC.Signaling` that has been passed to the related `Membrane.WebRTC.Source`. As a result, `Membrane.Webrtc.Source` will return the media stream captured from the browser, where `Membrane.WebRTC.Live.Capture` has been rendered.
+ - `Membrane.WebRTC.Live.Player` - exchanges WebRTC signaling messages between `Membrane.WebRTC.Sink` and the browser. It expects the same `Membrane.WebRTC.Signaling` that has been passed to the related `Membrane.WebRTC.Sink`. As a result, `Membrane.WebRTC.Live.Player` will play media streams passed to the related `Membrane.WebRTC.Sink`. Currently supports up to one video stream and up to one audio stream.
 
 ## Usage 
 

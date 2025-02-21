@@ -33,9 +33,9 @@ defmodule ExampleProject.MixProject do
   defp deps do
     [
       {:boombox,
-       github: "membraneframework/boombox", ref: "0dae52a0d3023f32c3039ae1eeb353e1433aa2a1"},
+       github: "membraneframework/boombox", ref: "f4ccbfcf4a71d14764fd269b3491d4c862c4d4c2"},
       {:membrane_webrtc_live, path: "../"},
-      {:membrane_webrtc_plugin, "~> 0.23.3", override: true},
+      {:membrane_webrtc_plugin, "~> 0.24.0", override: true},
       {:phoenix, "~> 1.7.19"},
       {:phoenix_html, "~> 4.1"},
       {:phoenix_live_reload, "~> 1.2", only: :dev},

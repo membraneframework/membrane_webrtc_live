@@ -5,7 +5,7 @@ defmodule Membrane.WebRTC.Live.Player do
   It:
   * renders a single HTMLVideoElement.
   * creates WebRTC PeerConnection on the browser side.
-  * forwards signaling messages between the browser and `Membrane.WebRTC.Sink` via `Membrane.WebRTC.SignalingChannel`.
+  * forwards signaling messages between the browser and `Membrane.WebRTC.Sink` via `Membrane.WebRTC.Signaling`.
   * attaches audio and video from the Elixir to the HTMLVideoElement.
 
   ## JavaScript Hook
@@ -42,7 +42,7 @@ defmodule Membrane.WebRTC.Live.Player do
 
     @impl true
     def mount(_params, _session, socket) do
-      signaling = Membrane.WebRTC.SignalingChannel.new()
+      signaling = Membrane.WebRTC.Signaling.new()
       {:ok, _supervisor, _pipelne} = Membrane.Pipeline.start_link(MyPipeline, signaling: signaling)
 
       socket = Player.attach(socket, id: "player", signaling: signaling)
@@ -55,13 +55,13 @@ defmodule Membrane.WebRTC.Live.Player do
   '''
   use Phoenix.LiveView
 
-  alias Membrane.WebRTC.SignalingChannel
+  alias Membrane.WebRTC.Signaling
 
   require Logger
 
   @type t() :: struct()
 
-  defstruct [:video?, :audio?, :ice_servers, id: nil, signaling_channel: nil]
+  defstruct [:video?, :audio?, :ice_servers, id: nil, signaling: nil]
 
   attr(:socket, Phoenix.LiveView.Socket, required: true, doc: "Parent live view socket")
 
@@ -101,7 +101,7 @@ defmodule Membrane.WebRTC.Live.Player do
       opts
       |> Keyword.validate!([
         :id,
-        :signaling_channel,
+        :signaling,
         video?: true,
         audio?: true,
         ice_servers: [%{urls: "stun:stun.l.google.com:19302"}]
@@ -163,8 +163,8 @@ defmodule Membrane.WebRTC.Live.Player do
       socket =
         receive do
           %__MODULE__{} = player ->
-            player.signaling_channel
-            |> SignalingChannel.register_peer(message_format: :json_data)
+            player.signaling
+            |> Signaling.register_peer(message_format: :json_data)
 
             socket |> assign(player: player)
         after
@@ -178,7 +178,7 @@ defmodule Membrane.WebRTC.Live.Player do
   end
 
   @impl true
-  def handle_info({SignalingChannel, _pid, message, _metadata}, socket) do
+  def handle_info({Signaling, _pid, message, _metadata}, socket) do
     Logger.info("""
     #{log_prefix(socket.assigns.player.id)} Sent WebRTC signaling message: #{inspect(message, pretty: true)}
     """)
@@ -197,8 +197,8 @@ defmodule Membrane.WebRTC.Live.Player do
     """)
 
     if message["data"] do
-      SignalingChannel.signal(
-        socket.assigns.player.signaling_channel,
+      Signaling.signal(
+        socket.assigns.player.signaling,
         message
       )
     end
