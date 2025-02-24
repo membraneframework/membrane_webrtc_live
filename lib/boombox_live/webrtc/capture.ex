@@ -64,7 +64,7 @@ defmodule Membrane.WebRTC.Live.Capture do
 
   attr(:socket, Phoenix.LiveView.Socket, required: true, doc: "Parent live view socket")
 
-  attr(:capture, __MODULE__,
+  attr(:capture, :string,
     required: true,
     doc: """
     #{inspect(__MODULE__)} struct. It is used to pass capture id to the newly created live view via live view session.
@@ -80,7 +80,7 @@ defmodule Membrane.WebRTC.Live.Capture do
   """
   def live_render(assigns) do
     ~H"""
-    <%= live_render(@socket, __MODULE__, id: "#{@capture.id}-lv", session: %{"class" => @class, "id" => @capture.id}) %>
+    <%= live_render(@socket, __MODULE__, id: "#{@capture}-lv", session: %{"class" => @class, "id" => @capture}) %>
     """
   end
 

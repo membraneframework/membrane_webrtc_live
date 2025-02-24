@@ -16,23 +16,16 @@ defmodule ExampleProjectWeb.LiveViews.Echo do
             )
           end)
 
-        socket =
-          socket
-          |> Capture.attach(
-            id: "mediaCapture",
-            signaling: ingress_signaling,
-            audio?: false,
-            video?: true
-          )
-          |> Player.attach(
-            id: "videoPlayer",
-            signaling: egress_signaling
-          )
-
         socket
-        |> assign(
-          capture: Capture.get_attached(socket, "mediaCapture"),
-          player: Player.get_attached(socket, "videoPlayer")
+        |> Capture.attach(
+          id: "mediaCapture",
+          signaling: ingress_signaling,
+          audio?: false,
+          video?: true
+        )
+        |> Player.attach(
+          id: "videoPlayer",
+          signaling: egress_signaling
         )
       else
         socket
@@ -41,15 +34,10 @@ defmodule ExampleProjectWeb.LiveViews.Echo do
     {:ok, socket}
   end
 
-  def render(%{capture: %Capture{}, player: %Player{}} = assigns) do
-    ~H"""
-    <Capture.live_render socket={@socket} capture={@capture} />
-    <Player.live_render socket={@socket} player={@player} />
-    """
-  end
-
   def render(assigns) do
     ~H"""
+    <Capture.live_render socket={@socket} capture={"mediaCapture"} />
+    <Player.live_render socket={@socket} player={"videoPlayer"} />
     """
   end
 end

@@ -65,7 +65,7 @@ defmodule Membrane.WebRTC.Live.Player do
 
   attr(:socket, Phoenix.LiveView.Socket, required: true, doc: "Parent live view socket")
 
-  attr(:player, __MODULE__,
+  attr(:player, :string,
     required: true,
     doc: """
     #{inspect(__MODULE__)} struct. It is used to pass player id to the newly created live view via live view session.
@@ -81,7 +81,7 @@ defmodule Membrane.WebRTC.Live.Player do
   """
   def live_render(assigns) do
     ~H"""
-    <%= live_render(@socket, __MODULE__, id: "#{@player.id}-lv", session: %{"class" => @class, "id" => @player.id}) %>
+    <%= live_render(@socket, __MODULE__, id: "#{@player}-lv", session: %{"class" => @class, "id" => @player}) %>
     """
   end
 
