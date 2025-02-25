@@ -8,7 +8,7 @@ defmodule ExampleProjectWeb.LiveViews.Echo do
         ingress_signaling = Membrane.WebRTC.Signaling.new()
         egress_signaling = Membrane.WebRTC.Signaling.new()
 
-        {:ok, _boombox_pid} =
+        {:ok, _task_pid} =
           Task.start_link(fn ->
             Boombox.run(
               input: {:webrtc, ingress_signaling},
