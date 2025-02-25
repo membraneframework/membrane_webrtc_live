@@ -22,9 +22,14 @@ export function createCaptureHook(iceServers = [{ urls: "stun:stun.l.google.com:
           );
         };
 
+        this.el.srcObject = new MediaStream();
+
         for (const track of localStream.getTracks()) {
           this.pc.addTrack(track, localStream);
+          this.el.srcObject.addTrack(track);
         }
+
+        this.el.play();
 
         this.handleEvent("webrtc_signaling-" + this.el.id, async (event) => {
           const { type, data } = event;

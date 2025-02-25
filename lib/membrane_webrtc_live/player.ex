@@ -61,7 +61,7 @@ defmodule Membrane.WebRTC.Live.Player do
 
   @type t() :: struct()
 
-  defstruct [:video?, :audio?, :ice_servers, id: nil, signaling: nil]
+  defstruct id: nil, signaling: nil
 
   attr(:socket, Phoenix.LiveView.Socket, required: true, doc: "Parent live view socket")
 
@@ -97,16 +97,7 @@ defmodule Membrane.WebRTC.Live.Player do
   """
   @spec attach(Phoenix.LiveView.Socket.t(), Keyword.t()) :: Phoenix.LiveView.Socket.t()
   def attach(socket, opts) do
-    opts =
-      opts
-      |> Keyword.validate!([
-        :id,
-        :signaling,
-        video?: true,
-        audio?: true,
-        ice_servers: [%{urls: "stun:stun.l.google.com:19302"}]
-      ])
-
+    opts = opts |> Keyword.validate!([:id, :signaling])
     player = struct!(__MODULE__, opts)
 
     all_players =
@@ -149,7 +140,7 @@ defmodule Membrane.WebRTC.Live.Player do
   @impl true
   def render(assigns) do
     ~H"""
-    <video id={@player.id} phx-hook="Player" class={@class} controls autoplay muted></video>
+    <video id={@player.id} phx-hook="Player" class={@class} controls autoplay muted display="-webkit-transform: scaleX(-1); transform: scaleX(-1); -moz-transform:scaleX(-1)"></video>
     """
   end
 
@@ -179,7 +170,7 @@ defmodule Membrane.WebRTC.Live.Player do
 
   @impl true
   def handle_info({Signaling, _pid, message, _metadata}, socket) do
-    Logger.info("""
+    Logger.debug("""
     #{log_prefix(socket.assigns.player.id)} Sent WebRTC signaling message: #{inspect(message, pretty: true)}
     """)
 
@@ -192,7 +183,7 @@ defmodule Membrane.WebRTC.Live.Player do
   def handle_event("webrtc_signaling", message, socket) do
     message = Jason.decode!(message)
 
-    Logger.info("""
+    Logger.debug("""
     #{log_prefix(socket.assigns.player.id)} Received WebRTC signaling message: #{inspect(message, pretty: true)}
     """)
 

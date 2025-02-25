@@ -60,7 +60,7 @@ defmodule Membrane.WebRTC.Live.Capture do
 
   @type t() :: struct()
 
-  defstruct [:ice_servers, id: nil, signaling: nil, video?: true, audio?: true]
+  defstruct [id: nil, signaling: nil, video?: true, audio?: true, preview?: true]
 
   attr(:socket, Phoenix.LiveView.Socket, required: true, doc: "Parent live view socket")
 
@@ -103,7 +103,7 @@ defmodule Membrane.WebRTC.Live.Capture do
         :signaling,
         video?: true,
         audio?: true,
-        ice_servers: [%{urls: "stun:stun.l.google.com:19302"}]
+        preview?: true
       ])
 
     capture = struct!(__MODULE__, opts)
@@ -146,9 +146,22 @@ defmodule Membrane.WebRTC.Live.Capture do
   end
 
   @impl true
-  def render(assigns) do
+  def render(%{capture: %__MODULE__{preview?: true}} = assigns) do
     ~H"""
-    <div id={@capture.id} phx-hook="Capture" class={@class} style="display: none;"></div>
+    <video id={@capture.id} phx-hook="Capture" class={@class} style="
+      -o-transform : scaleX(-1);
+      -moz-transform : scaleX(-1);
+      -webkit-transform : scaleX(-1);
+      -ms-transform: scaleX(-1);
+      transform : scaleX(-1);
+    "></video>
+    """
+  end
+
+  @impl true
+  def render(%{capture: %__MODULE__{preview?: false}} = assigns) do
+    ~H"""
+    <video id={@capture.id} phx-hook="Capture" class={@class} style="display: none;"></video>
     """
   end
 
@@ -185,7 +198,7 @@ defmodule Membrane.WebRTC.Live.Capture do
 
   @impl true
   def handle_info({Signaling, _pid, message, _metadata}, socket) do
-    Logger.info("""
+    Logger.debug("""
     #{log_prefix(socket.assigns.capture.id)} Sent WebRTC signaling message: #{inspect(message, pretty: true)}
     """)
 
@@ -198,7 +211,7 @@ defmodule Membrane.WebRTC.Live.Capture do
   def handle_event("webrtc_signaling", message, socket) do
     message = Jason.decode!(message)
 
-    Logger.info("""
+    Logger.debug("""
     #{log_prefix(socket.assigns.capture.id)} Received WebRTC signaling message: #{inspect(message, pretty: true)}
     """)
 
