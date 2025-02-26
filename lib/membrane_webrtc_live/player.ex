@@ -36,7 +36,7 @@ defmodule Membrane.WebRTC.Live.Player do
     @impl true
     def render(assigns) do
     ~H"""
-    <Player.live_render socket={@socket} player={@player} />
+    <Player.live_render socket={@socket} player={"player"} />
     """
     end
 
@@ -45,9 +45,7 @@ defmodule Membrane.WebRTC.Live.Player do
       signaling = Membrane.WebRTC.Signaling.new()
       {:ok, _supervisor, _pipelne} = Membrane.Pipeline.start_link(MyPipeline, signaling: signaling)
 
-      socket = Player.attach(socket, id: "player", signaling: signaling)
-      socket = assign(socket, :player, Player.get_attached(socket, "player"))
-
+      socket = socket |> Player.attach(id: "player", signaling: signaling)
       {:ok, socket}
     end
   end
@@ -59,7 +57,7 @@ defmodule Membrane.WebRTC.Live.Player do
 
   require Logger
 
-  @type t() :: struct()
+  @type t() :: %__MODULE__{}
 
   defstruct id: nil, signaling: nil
 
@@ -86,14 +84,15 @@ defmodule Membrane.WebRTC.Live.Player do
   end
 
   @doc """
-  Attaches required hooks and creates `t:t/0` struct.
+    Attaches required hooks and creates `t:t/0` struct.
 
-  Created struct is saved in socket's assigns and has to be passed to `LiveExWebRTC.Player.live_render/1`.
+  Created struct is saved in socket's assigns (in `socket.assigns[#{inspect(__MODULE__)}][id]`) and then
+  it is sent by an attached hook to a child live view process.
 
   Options:
-  * `id` - player id. This is typically your user id (if there is users database).
-  It is used to identify live view and generated HTML video player.
-  * `class` - a list of CSS/Tailwind classes that will be applied to the HTMLVideoPlayer. Defaults to "".
+  * `id` - player id. It is used to identify live view and generated HTML video player. It must be unique
+  withing single page.
+  * `signaling` - `Membrane.WebRTC.Signaling.t()`, that has been passed to `Membrane.Webrtc.Sink` as well.
   """
   @spec attach(Phoenix.LiveView.Socket.t(), Keyword.t()) :: Phoenix.LiveView.Socket.t()
   def attach(socket, opts) do
@@ -108,26 +107,11 @@ defmodule Membrane.WebRTC.Live.Player do
     socket
     |> assign(__MODULE__, all_players)
     |> detach_hook(:player_handshake, :handle_info)
-    |> attach_hook(:player_handshake, :handle_info, &handshake/2)
+    |> attach_hook(:player_handshake, :handle_info, &parent_handshake/2)
   end
 
+  @spec get_attached(Phoenix.LiveView.Socket.t(), String.t()) :: t()
   def get_attached(socket, id), do: socket.assigns[__MODULE__][id]
-
-  defp handshake({__MODULE__, {:connected, id, child_pid, _meta}}, socket) do
-    # child live view is connected, send it player struct
-    player =
-      socket.assigns
-      |> Map.fetch!(__MODULE__)
-      |> Map.fetch!(id)
-
-    send(child_pid, player)
-
-    {:halt, socket}
-  end
-
-  defp handshake(_msg, socket) do
-    {:cont, socket}
-  end
 
   ## CALLBACKS
 
@@ -140,31 +124,48 @@ defmodule Membrane.WebRTC.Live.Player do
   @impl true
   def render(assigns) do
     ~H"""
-    <video id={@player.id} phx-hook="Player" class={@class} controls autoplay muted display="-webkit-transform: scaleX(-1); transform: scaleX(-1); -moz-transform:scaleX(-1)"></video>
+    <video id={@player.id} phx-hook="Player" class={@class} controls autoplay muted></video>
     """
   end
 
   @impl true
   def mount(_params, %{"class" => class, "id" => id}, socket) do
-    socket = assign(socket, class: class, player: nil)
+    socket = socket |> assign(class: class, player: nil)
 
-    if connected?(socket) do
-      send(socket.parent_pid, {__MODULE__, {:connected, id, self(), %{}}})
+    socket =
+      if connected?(socket),
+        do: socket |> client_handshake(id),
+        else: socket
 
-      socket =
-        receive do
-          %__MODULE__{} = player ->
-            player.signaling
-            |> Signaling.register_peer(message_format: :json_data)
+    {:ok, socket}
+  end
 
-            socket |> assign(player: player)
-        after
-          5000 -> exit(:timeout)
-        end
+  defp parent_handshake({__MODULE__, {:connected, id, player_pid}}, socket) do
+    player_struct =
+      socket.assigns
+      |> Map.fetch!(__MODULE__)
+      |> Map.fetch!(id)
 
-      {:ok, socket}
-    else
-      {:ok, socket}
+    send(player_pid, player_struct)
+
+    {:halt, socket}
+  end
+
+  defp parent_handshake(_msg, socket) do
+    {:cont, socket}
+  end
+
+  defp client_handshake(socket, id) do
+    send(socket.parent_pid, {__MODULE__, {:connected, id, self()}})
+
+    receive do
+      %__MODULE__{} = player ->
+        player.signaling
+        |> Signaling.register_peer(message_format: :json_data)
+
+        socket |> assign(player: player)
+    after
+      5000 -> exit(:timeout)
     end
   end
 
@@ -188,10 +189,8 @@ defmodule Membrane.WebRTC.Live.Player do
     """)
 
     if message["data"] do
-      Signaling.signal(
-        socket.assigns.player.signaling,
-        message
-      )
+      socket.assigns.player.signaling
+      |> Signaling.signal(message)
     end
 
     {:noreply, socket}

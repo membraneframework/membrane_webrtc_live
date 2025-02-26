@@ -35,7 +35,7 @@ defmodule Membrane.WebRTC.Live.Capture do
     @impl true
     def render(assigns) do
     ~H"""
-    <Capture.live_render socket={@socket} capture={@capture} />
+    <Capture.live_render socket={@socket} capture={"capture"} />
     """
     end
 
@@ -44,9 +44,7 @@ defmodule Membrane.WebRTC.Live.Capture do
       signaling = Membrane.WebRTC.Signaling.new()
       {:ok, _supervisor, _pipelne} = Membrane.Pipeline.start_link(MyPipeline, signaling: signaling)
 
-      socket = Capture.attach(socket, id: "capture", signaling: signaling)
-      socket = assign(socket, :capture, Capture.get_attached(socket, "capture"))
-
+      socket = socket |> Capture.attach(id: "capture", signaling: signaling)
       {:ok, socket}
     end
   end
@@ -58,9 +56,9 @@ defmodule Membrane.WebRTC.Live.Capture do
 
   require Logger
 
-  @type t() :: struct()
+  @type t() :: %__MODULE__{}
 
-  defstruct [id: nil, signaling: nil, video?: true, audio?: true, preview?: true]
+  defstruct id: nil, signaling: nil, video?: true, audio?: true, preview?: true
 
   attr(:socket, Phoenix.LiveView.Socket, required: true, doc: "Parent live view socket")
 
@@ -87,12 +85,17 @@ defmodule Membrane.WebRTC.Live.Capture do
   @doc """
   Attaches required hooks and creates `t:t/0` struct.
 
-  Created struct is saved in socket's assigns and has to be passed to `LiveExWebRTC.Player.live_render/1`.
+  Created struct is saved in socket's assigns (in `socket.assigns[#{inspect(__MODULE__)}][id]`) and then
+  it is sent by an attached hook to a child live view process.
 
   Options:
-  * `id` - capture id. This is typically your user id (if there is users database).
-  It is used to identify live view and generated HTML video player.
-  * `class` - a list of CSS/Tailwind classes that will be applied to the HTMLVideoPlayer. Defaults to "".
+  * `id` - capture id. It is used to identify live view and generated HTML video player. It must be unique
+  withing single page.
+  * `signaling` - `Membrane.WebRTC.Signaling.t()`, that has been passed to `Membrane.Webrtc.Source` as well.
+  * `video?` - if `true`, the video stream from the computer camera will be captured. Defaults to `true`.
+  * `audio?` - if `true`, the audio stream from the computer mic will be captured. Defaults to `true`.
+  * `preview?` - if `true`, the function `#{inspect(__MODULE__)}.live_render/1` return a video HTML tag
+  with attached captured video stream. Defaults to `true`.
   """
   @spec attach(Phoenix.LiveView.Socket.t(), Keyword.t()) :: Phoenix.LiveView.Socket.t()
   def attach(socket, opts) do
@@ -116,26 +119,11 @@ defmodule Membrane.WebRTC.Live.Capture do
     socket
     |> assign(__MODULE__, all_captures)
     |> detach_hook(:capture_handshake, :handle_info)
-    |> attach_hook(:capture_handshake, :handle_info, &handshake/2)
+    |> attach_hook(:capture_handshake, :handle_info, &parent_handshake/2)
   end
 
+  @spec get_attached(Phoenix.LiveView.Socket.t(), String.t()) :: t()
   def get_attached(socket, id), do: socket.assigns[__MODULE__][id]
-
-  defp handshake({__MODULE__, {:connected, capture_id, child_pid, _meta}}, socket) do
-    # child live view is connected, send it capture struct
-    capture =
-      socket.assigns
-      |> Map.fetch!(__MODULE__)
-      |> Map.fetch!(capture_id)
-
-    send(child_pid, capture)
-
-    {:halt, socket}
-  end
-
-  defp handshake(_msg, socket) do
-    {:cont, socket}
-  end
 
   ## CALLBACKS
 
@@ -167,32 +155,49 @@ defmodule Membrane.WebRTC.Live.Capture do
 
   @impl true
   def mount(_params, %{"class" => class, "id" => id}, socket) do
-    socket = assign(socket, class: class, capture: nil)
+    socket = socket |> assign(class: class, capture: nil)
 
-    if connected?(socket) do
-      send(socket.parent_pid, {__MODULE__, {:connected, id, self(), %{}}})
+    socket =
+      if connected?(socket),
+        do: socket |> client_handshake(id),
+        else: socket
 
-      socket =
-        receive do
-          %__MODULE__{} = capture ->
-            capture.signaling
-            |> Signaling.register_peer(message_format: :json_data)
+    {:ok, socket}
+  end
 
-            media_constraints = %{
-              "audio" => inspect(capture.audio?),
-              "video" => inspect(capture.video?)
-            }
+  defp parent_handshake({__MODULE__, {:connected, id, capture_pid}}, socket) do
+    capture_struct =
+      socket.assigns
+      |> Map.fetch!(__MODULE__)
+      |> Map.fetch!(id)
 
-            socket
-            |> assign(capture: capture)
-            |> push_event("media_constraints-#{capture.id}", media_constraints)
-        after
-          5000 -> exit(:timeout)
-        end
+    send(capture_pid, capture_struct)
 
-      {:ok, socket}
-    else
-      {:ok, socket}
+    {:halt, socket}
+  end
+
+  defp parent_handshake(_msg, socket) do
+    {:cont, socket}
+  end
+
+  defp client_handshake(socket, id) do
+    send(socket.parent_pid, {__MODULE__, {:connected, id, self()}})
+
+    receive do
+      %__MODULE__{} = capture ->
+        capture.signaling
+        |> Signaling.register_peer(message_format: :json_data)
+
+        media_constraints = %{
+          "audio" => inspect(capture.audio?),
+          "video" => inspect(capture.video?)
+        }
+
+        socket
+        |> assign(capture: capture)
+        |> push_event("media_constraints-#{capture.id}", media_constraints)
+    after
+      5000 -> exit(:timeout)
     end
   end
 
@@ -216,10 +221,8 @@ defmodule Membrane.WebRTC.Live.Capture do
     """)
 
     if message["data"] do
-      Signaling.signal(
-        socket.assigns.capture.signaling,
-        message
-      )
+      socket.assigns.capture.signaling
+      |> Signaling.signal(message)
     end
 
     {:noreply, socket}
