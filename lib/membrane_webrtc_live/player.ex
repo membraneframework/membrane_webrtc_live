@@ -182,7 +182,11 @@ defmodule Membrane.WebRTC.Live.Player do
 
   @impl true
   def handle_event("webrtc_signaling", message, socket) do
-    message = Jason.decode!(message)
+    message =
+      # this is a hack to supress dialyzer, that for some reason thinks that `message`
+      # is a map, while it is a binary
+      apply(__MODULE__, :identity, [message])
+      |> Jason.decode!()
 
     Logger.debug("""
     #{log_prefix(socket.assigns.player.id)} Received WebRTC signaling message: #{inspect(message, pretty: true)}
@@ -197,4 +201,7 @@ defmodule Membrane.WebRTC.Live.Player do
   end
 
   defp log_prefix(id), do: [module: __MODULE__, id: id] |> inspect()
+
+  @spec identity(term()) :: term()
+  def identity(sth), do: sth
 end
