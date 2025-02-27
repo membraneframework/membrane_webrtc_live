@@ -17,7 +17,7 @@ defmodule ExampleProjectWeb.Router do
   scope "/", ExampleProjectWeb do
     pipe_through(:browser)
 
-    live("/", LiveViews.Echo, :index)
+    live("/", Live.EchoLive, :index)
   end
 
   # Other scopes may use custom stacks.

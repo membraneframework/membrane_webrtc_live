@@ -70,7 +70,7 @@ defmodule Membrane.WebRTC.Live.Capture do
     """
   )
 
-  attr(:class, :string, default: nil, doc: "CSS/Tailwind classes for styling")
+  attr(:class, :string, default: "", doc: "CSS/Tailwind classes for styling")
 
   @doc """
   Helper function for rendering Capture live view.
@@ -136,7 +136,7 @@ defmodule Membrane.WebRTC.Live.Capture do
   @impl true
   def render(%{capture: %__MODULE__{preview?: true}} = assigns) do
     ~H"""
-    <video id={@capture.id} phx-hook="Capture" class={@class} style="
+    <video id={@capture.id} phx-hook="Capture" class={"" <> @class} style="
       -o-transform : scaleX(-1);
       -moz-transform : scaleX(-1);
       -webkit-transform : scaleX(-1);

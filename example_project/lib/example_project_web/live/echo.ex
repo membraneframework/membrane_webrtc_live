@@ -1,4 +1,4 @@
-defmodule ExampleProjectWeb.LiveViews.Echo do
+defmodule ExampleProjectWeb.Live.EchoLive do
   use ExampleProjectWeb, :live_view
   alias Membrane.WebRTC.Live.{Capture, Player}
 
