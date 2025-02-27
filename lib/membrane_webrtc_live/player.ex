@@ -52,10 +52,9 @@ defmodule Membrane.WebRTC.Live.Player do
   ```
   '''
   use Phoenix.LiveView
+  require Logger
 
   alias Membrane.WebRTC.Signaling
-
-  require Logger
 
   @type t() :: %__MODULE__{}
 
@@ -77,6 +76,7 @@ defmodule Membrane.WebRTC.Live.Player do
   @doc """
   Helper function for rendering Player live view.
   """
+  @spec live_render(map()) :: live_view when live_view: term()
   def live_render(assigns) do
     ~H"""
     <%= live_render(@socket, __MODULE__, id: "#{@player}-lv", session: %{"class" => @class, "id" => @player}) %>

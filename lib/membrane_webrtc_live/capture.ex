@@ -51,10 +51,9 @@ defmodule Membrane.WebRTC.Live.Capture do
   ```
   '''
   use Phoenix.LiveView
+  require Logger
 
   alias Membrane.WebRTC.Signaling
-
-  require Logger
 
   @type t() :: %__MODULE__{}
 
@@ -76,6 +75,7 @@ defmodule Membrane.WebRTC.Live.Capture do
   @doc """
   Helper function for rendering Capture live view.
   """
+  @spec live_render(map()) :: live_view when live_view: term()
   def live_render(assigns) do
     ~H"""
     <%= live_render(@socket, __MODULE__, id: "#{@capture}-lv", session: %{"class" => @class, "id" => @capture}) %>
