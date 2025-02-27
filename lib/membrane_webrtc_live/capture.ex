@@ -214,9 +214,9 @@ defmodule Membrane.WebRTC.Live.Capture do
 
   @impl true
   def handle_event("webrtc_signaling", message, socket) do
+    # this is a hack to supress dialyzer, that for some reason thinks that `message`
+    # is a map, while it is a binary
     message =
-      # this is a hack to supress dialyzer, that for some reason thinks that `message`
-      # is a map, while it is a binary
       apply(__MODULE__, :identity, [message])
       |> Jason.decode!()
 
