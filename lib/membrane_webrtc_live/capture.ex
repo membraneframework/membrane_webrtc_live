@@ -136,7 +136,7 @@ defmodule Membrane.WebRTC.Live.Capture do
   @impl true
   def render(%{capture: %__MODULE__{preview?: true}} = assigns) do
     ~H"""
-    <video id={@capture.id} phx-hook="Capture" class={"" <> @class} style="
+    <video id={@capture.id} phx-hook="Capture" class={@class} style="
       -o-transform: scaleX(-1);
       -moz-transform: scaleX(-1);
       -webkit-transform: scaleX(-1);
