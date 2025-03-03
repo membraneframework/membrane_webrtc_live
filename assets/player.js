@@ -10,7 +10,7 @@ export function createPlayerHook(iceServers = [{ urls: "stun:stun.l.google.com:1
 
       this.pc.onicecandidate = (ev) => {
         console.log("[" + this.el.id + "] Sent ICE candidate:", ev.candidate);
-        message = JSON.stringify({ type: "ice_candidate", data: ev.candidate });
+        message = { type: "ice_candidate", data: ev.candidate };
         this.pushEventTo(this.el, "webrtc_signaling", message);
       };
 
@@ -26,7 +26,7 @@ export function createPlayerHook(iceServers = [{ urls: "stun:stun.l.google.com:1
             const answer = await this.pc.createAnswer();
             await this.pc.setLocalDescription(answer);
 
-            message = JSON.stringify({ type: "sdp_answer", data: answer });
+            message = { type: "sdp_answer", data: answer };
             this.pushEventTo(this.el, "webrtc_signaling", message);
             console.log("[" + this.el.id + "] Sent SDP answer:", answer);
 

@@ -11,7 +11,7 @@ export function createCaptureHook(iceServers = [{ urls: "stun:stun.l.google.com:
         this.pc.onicecandidate = (event) => {
           if (event.candidate === null) return;
           console.log("[" + this.el.id + "] Sent ICE candidate:", event.candidate);
-          message = JSON.stringify({ type: "ice_candidate", data: event.candidate });
+          message = { type: "ice_candidate", data: event.candidate };
           this.pushEventTo(this.el, "webrtc_signaling", message);
         };
 
@@ -49,7 +49,7 @@ export function createCaptureHook(iceServers = [{ urls: "stun:stun.l.google.com:
         const offer = await this.pc.createOffer();
         await this.pc.setLocalDescription(offer);
         console.log("[" + this.el.id + "] Sent SDP offer:", offer);
-        message = JSON.stringify({ type: "sdp_offer", data: offer });
+        message = { type: "sdp_offer", data: offer };
         this.pushEventTo(this.el, "webrtc_signaling", message);
       });
     },
