@@ -36,7 +36,7 @@ defmodule Membrane.WebRTC.Live.Player do
     @impl true
     def render(assigns) do
     ~H"""
-    <Player.live_render socket={@socket} player={"player"} />
+    <Player.live_render socket={@socket} player_id={"player"} />
     """
     end
 
@@ -65,9 +65,8 @@ defmodule Membrane.WebRTC.Live.Player do
   attr(:player_id, :string,
     required: true,
     doc: """
-    #{inspect(__MODULE__)} struct. It is used to pass player id to the newly created live view via live view session.
-    This data is then used to do a handshake between parent live view and child live view during which child live view
-    receives the whole #{inspect(__MODULE__)} struct.
+    ID of a `player` previously attached to the socket. It has to be the same as the value passed to `:id`
+    field `#{inspect(__MODULE__)}.attach/2`.
     """
   )
 

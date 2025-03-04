@@ -35,7 +35,7 @@ defmodule Membrane.WebRTC.Live.Capture do
     @impl true
     def render(assigns) do
     ~H"""
-    <Capture.live_render socket={@socket} capture={"capture"} />
+    <Capture.live_render socket={@socket} capture_id={"capture"} />
     """
     end
 
@@ -64,9 +64,8 @@ defmodule Membrane.WebRTC.Live.Capture do
   attr(:capture_id, :string,
     required: true,
     doc: """
-    #{inspect(__MODULE__)} struct. It is used to pass capture id to the newly created live view via live view session.
-    This data is then used to do a handshake between parent live view and child live view during which child live view
-    receives the whole #{inspect(__MODULE__)} struct.
+    ID of a `caputre` previously attached to the socket. It has to be the same as the value passed to `:id`
+    field `#{inspect(__MODULE__)}.attach/2`.
     """
   )
 
