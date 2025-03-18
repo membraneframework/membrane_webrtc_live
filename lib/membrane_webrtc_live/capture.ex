@@ -85,7 +85,7 @@ defmodule Membrane.WebRTC.Live.Capture do
   Attaches required hooks and creates `t:t/0` struct.
 
   Created struct is saved in socket's assigns (in `socket.assigns[#{inspect(__MODULE__)}][id]`) and then
-  it is sent by an attached hook to a child live view process.
+  it is sent by an attached hook to a child LiveView process.
 
   Options:
   * `id` - capture id. It is used to identify live view and generated HTML video player. It must be unique
