@@ -56,7 +56,10 @@ defmodule Membrane.WebRTC.Live.Player do
 
   alias Membrane.WebRTC.Signaling
 
-  @type t() :: %__MODULE__{}
+  @type t() :: %__MODULE__{
+          id: String.t(),
+          signaling: Signaling.t()
+        }
 
   defstruct id: nil, signaling: nil
 
@@ -83,7 +86,7 @@ defmodule Membrane.WebRTC.Live.Player do
   end
 
   @doc """
-    Attaches required hooks and creates `t:t/0` struct.
+    Attaches required hooks and creates `#{inspect(__MODULE__)}` struct.
 
   Created struct is saved in socket's assigns (in `socket.assigns[#{inspect(__MODULE__)}][id]`) and then
   it is sent by an attached hook to a child live view process.
@@ -133,7 +136,7 @@ defmodule Membrane.WebRTC.Live.Player do
 
     socket =
       if connected?(socket),
-        do: socket |> client_handshake(id),
+        do: client_handshake(socket, id),
         else: socket
 
     {:ok, socket}

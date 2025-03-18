@@ -55,7 +55,13 @@ defmodule Membrane.WebRTC.Live.Capture do
 
   alias Membrane.WebRTC.Signaling
 
-  @type t() :: %__MODULE__{}
+  @type t() :: %__MODULE__{
+          id: String.t(),
+          signaling: Signaling.t(),
+          preview?: boolean(),
+          audio?: boolean(),
+          video?: boolean()
+        }
 
   defstruct id: nil, signaling: nil, video?: true, audio?: true, preview?: true
 
@@ -82,7 +88,7 @@ defmodule Membrane.WebRTC.Live.Capture do
   end
 
   @doc """
-  Attaches required hooks and creates `t:t/0` struct.
+  Attaches required hooks and creates `#{inspect(__MODULE__)}` struct.
 
   Created struct is saved in socket's assigns and then
   it is sent by an attached hook to a child LiveView process.
@@ -158,7 +164,7 @@ defmodule Membrane.WebRTC.Live.Capture do
 
     socket =
       if connected?(socket),
-        do: socket |> client_handshake(id),
+        do: client_handshake(socket, id),
         else: socket
 
     {:ok, socket}
