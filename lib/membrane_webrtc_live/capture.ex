@@ -9,7 +9,7 @@ defmodule Membrane.WebRTC.Live.Capture do
 
   ## JavaScript Hook
 
-  Capture live view requires JavaScript hook to be registered under `Capture` name.
+  Capture LiveView requires JavaScript hook to be registered under `Capture` name.
   The hook can be created using `createCaptureHook` function.
   For example:
 
