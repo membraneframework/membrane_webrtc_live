@@ -84,7 +84,7 @@ defmodule Membrane.WebRTC.Live.Capture do
   @doc """
   Attaches required hooks and creates `t:t/0` struct.
 
-  Created struct is saved in socket's assigns (in `socket.assigns[#{inspect(__MODULE__)}][id]`) and then
+  Created struct is saved in socket's assigns and then
   it is sent by an attached hook to a child LiveView process.
 
   Options:
