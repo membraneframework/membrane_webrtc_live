@@ -35,7 +35,7 @@ defmodule Membrane.WebRTC.Live.Capture do
     @impl true
     def render(assigns) do
     ~H"""
-    <Capture.live_render socket={@socket} capture_id={"capture"} />
+    <Capture.live_render socket={@socket} capture_id="capture" />
     """
     end
 
