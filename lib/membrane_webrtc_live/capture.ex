@@ -72,7 +72,7 @@ defmodule Membrane.WebRTC.Live.Capture do
   attr(:class, :string, default: "", doc: "CSS/Tailwind classes for styling")
 
   @doc """
-  Helper function for rendering Capture live view.
+  Helper function for rendering Capture LiveView.
   """
   @spec live_render(map()) :: live_view when live_view: term()
   def live_render(assigns) do
