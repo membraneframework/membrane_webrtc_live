@@ -78,7 +78,6 @@ defmodule Membrane.WebRTC.Live.Player do
   @doc """
   Helper function for rendering Player live view.
   """
-  @spec live_render(map()) :: live_view when live_view: term()
   def live_render(assigns) do
     ~H"""
     <%= live_render(@socket, __MODULE__, id: "#{@player_id}-lv", session: %{"class" => @class, "id" => @player_id}) %>

@@ -80,7 +80,6 @@ defmodule Membrane.WebRTC.Live.Capture do
   @doc """
   Helper function for rendering Capture LiveView.
   """
-  @spec live_render(map()) :: live_view when live_view: term()
   def live_render(assigns) do
     ~H"""
     <%= live_render(@socket, __MODULE__, id: "#{@capture_id}-lv", session: %{"class" => @class, "id" => @capture_id}) %>
